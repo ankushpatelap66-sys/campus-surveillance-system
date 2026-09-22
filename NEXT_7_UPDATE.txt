@@ -1,0 +1,9 @@
+NEXT 7 - ENTRY & EXIT MODULE
+
+- Refined Entry & Exit page to the CVRU dashboard visual language.
+- Added live dynamic summary cards: total records, currently inside, exited vehicles, and today's entries.
+- Added client-side search across vehicle number, owner name, and status.
+- Added status filter and result count.
+- Preserved existing Entry/Exit API CRUD behavior.
+- Preserved record entry, mark-exit and delete actions.
+- Added responsive behavior for summary cards and toolbar.

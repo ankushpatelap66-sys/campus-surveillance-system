@@ -1,0 +1,9 @@
+Next 3 fresh rebuild
+====================
+
+- Rebuilt from the verified Next 2 project package after the previous attachment became unavailable.
+- Removed the remaining hardcoded Security Alerts navigation badge from NAV_ITEMS.
+- Sidebar Security Alerts badge remains driven by the live dashboard active-alert count.
+- Header notification badge remains driven by the live dashboard active-alert count.
+- Existing dynamic dashboard data integration and existing module functionality are preserved.
+- .env, node_modules and dist are excluded.

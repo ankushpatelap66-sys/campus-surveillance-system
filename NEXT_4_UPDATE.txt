@@ -1,0 +1,13 @@
+Next 4 update
+==============
+
+1. Fixed a syntax error in server/automationRoutes.js inside the dashboard summary response.
+2. Dashboard now uses a reference-matching two-column layout: four live stat cards + activity/alerts on the left, Administrator Access + Live Camera on the right.
+3. Activity icons are now semantic SVG icon names rendered by the existing Icon component instead of placeholder glyphs.
+4. Automatic parking-slot assignment was aligned with the dashboard's 120-slot capacity (P-01 through P-120).
+5. Existing dynamic dashboard counts, live alert badge, authentication and module APIs are preserved.
+
+Validation:
+- node --check server/automationRoutes.js: PASS
+- node --check server/server.js: PASS
+- Vite build could not complete in this environment because the supplied node_modules is missing the platform-specific Rolldown native binding. This is an environment/dependency issue, not a source syntax error.

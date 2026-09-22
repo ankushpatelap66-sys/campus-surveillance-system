@@ -1,0 +1,9 @@
+NEXT 5 - VEHICLE MANAGEMENT UI REFINEMENT
+
+- Preserved existing Vehicle Registration CRUD/API logic.
+- Removed the duplicate in-page Vehicle Management title when the module is rendered inside the dashboard shell; the dashboard ModuleHeading remains the page heading.
+- Added dynamic vehicle summary cards derived from loaded vehicle records: Registered Vehicles, Cars, Bikes & Scooters, Staff / Faculty.
+- Added client-side vehicle search across owner, vehicle number, vehicle type, person type and contact.
+- Added result count and empty search state.
+- Kept responsive behavior for tablet/mobile widths.
+- No backend API contract was changed.

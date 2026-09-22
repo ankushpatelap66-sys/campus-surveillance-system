@@ -1,0 +1,296 @@
+/* =========================================
+   CAMPUS SURVEILLANCE - VEHICLE MANAGEMENT
+   ========================================= */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #f4f8ff;
+  color: #173b72;
+}
+
+/* Main Vehicle Page */
+.vehicle-page {
+  min-height: 100vh;
+  padding: 40px;
+  background:
+    linear-gradient(135deg, #eef5ff 0%, #ffffff 50%, #edf5ff 100%);
+}
+
+/* Main Heading */
+.vehicle-page h1 {
+  margin: 0 0 30px;
+  text-align: center;
+  color: #075ed7;
+  font-size: 36px;
+  font-weight: 800;
+}
+
+/* =========================================
+   ALERTS
+   ========================================= */
+
+.vehicle-page .success-message {
+  max-width: 1200px;
+  margin: 0 auto 25px;
+  padding: 16px 22px;
+  border: 1px solid #8ee0b5;
+  border-radius: 10px;
+  background: #e8fff1;
+  color: #087443;
+  font-size: 18px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.vehicle-page .error-message {
+  max-width: 1200px;
+  margin: 0 auto 25px;
+  padding: 16px 22px;
+  border: 1px solid #ffb4b4;
+  border-radius: 10px;
+  background: #fff0f0;
+  color: #c62828;
+  font-size: 17px;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* =========================================
+   FORM CARD
+   ========================================= */
+
+.vehicle-page form {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 35px 40px 40px;
+  background: #ffffff;
+  border: 1px solid #c9ddfa;
+  border-radius: 14px;
+  box-shadow: 0 8px 30px rgba(20, 83, 160, 0.12);
+}
+
+/* Form labels */
+.vehicle-page form label {
+  display: block;
+  margin-bottom: 8px;
+  color: #173f78;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* Inputs */
+.vehicle-page form input,
+.vehicle-page form select {
+  width: 100%;
+  height: 48px;
+  padding: 0 15px;
+  border: 1px solid #c5d9f5;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #173b72;
+  font-size: 16px;
+  outline: none;
+  transition: 0.2s ease;
+}
+
+/* Input focus */
+.vehicle-page form input:focus,
+.vehicle-page form select:focus {
+  border-color: #1268e8;
+  box-shadow: 0 0 0 3px rgba(18, 104, 232, 0.12);
+}
+
+/* Form spacing */
+.vehicle-page form > div {
+  margin-bottom: 20px !important;
+}
+
+/* =========================================
+   FORM BUTTONS
+   ========================================= */
+
+.vehicle-page form button {
+  height: 48px;
+  padding: 0 28px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #0867e8, #0754c7);
+  color: white;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.vehicle-page form button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 15px rgba(7, 84, 199, 0.25);
+}
+
+.vehicle-page form button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Cancel button */
+.vehicle-page form button[type="button"] {
+  background: white;
+  color: #0867e8;
+  border: 2px solid #0867e8;
+}
+
+.vehicle-page form button[type="button"]:hover {
+  background: #eef5ff;
+}
+
+/* =========================================
+   DIVIDER
+   ========================================= */
+
+.vehicle-page hr {
+  max-width: 1200px;
+  margin: 35px auto;
+  border: none;
+  border-top: 1px solid #cbdcf2;
+}
+
+/* =========================================
+   REGISTERED VEHICLES
+   ========================================= */
+
+.vehicle-page h2 {
+  max-width: 1200px;
+  margin: 0 auto 18px;
+  padding: 18px 22px;
+  border-radius: 10px 10px 0 0;
+  background: linear-gradient(135deg, #0867e8, #0754c7);
+  color: white;
+  font-size: 23px;
+  font-weight: 700;
+}
+
+/* No vehicles message */
+.vehicle-page > p {
+  max-width: 1200px;
+  margin: 20px auto;
+  padding: 25px;
+  background: white;
+  border-radius: 10px;
+  text-align: center;
+  color: #607899;
+}
+
+/* =========================================
+   TABLE
+   ========================================= */
+
+.vehicle-page table {
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100% !important;
+  border-collapse: separate !important;
+  border-spacing: 0;
+  overflow: hidden;
+  background: white;
+  border: 1px solid #c9ddfa;
+  border-radius: 0 0 10px 10px;
+  box-shadow: 0 6px 20px rgba(20, 83, 160, 0.08);
+}
+
+/* Table Header */
+.vehicle-page table thead {
+  background: #e8f2ff;
+}
+
+.vehicle-page table th {
+  padding: 16px 12px;
+  border-bottom: 2px solid #c9ddfa;
+  color: #104a91;
+  font-size: 15px;
+  font-weight: 800;
+  text-align: center;
+}
+
+/* Table cells */
+.vehicle-page table td {
+  padding: 16px 12px;
+  border-bottom: 1px solid #dce8f7;
+  color: #294b78;
+  font-size: 15px;
+  text-align: center;
+}
+
+/* Row hover */
+.vehicle-page table tbody tr:hover {
+  background: #f5f9ff;
+}
+
+/* Last row */
+.vehicle-page table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* =========================================
+   TABLE ACTION BUTTONS
+   ========================================= */
+
+.vehicle-page table button {
+  padding: 9px 18px;
+  border: none;
+  border-radius: 7px;
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  background: #0875e1;
+  transition: 0.2s ease;
+}
+
+.vehicle-page table button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 80, 180, 0.2);
+}
+
+/* Delete button */
+.vehicle-page table button:last-child {
+  margin-left: 8px !important;
+  background: #ed3b45;
+}
+
+.vehicle-page table button:last-child:hover {
+  background: #d92d37;
+}
+
+/* =========================================
+   RESPONSIVE DESIGN
+   ========================================= */
+
+@media (max-width: 800px) {
+  .vehicle-page {
+    padding: 20px 12px;
+  }
+
+  .vehicle-page h1 {
+    font-size: 28px;
+  }
+
+  .vehicle-page form {
+    padding: 25px 18px;
+  }
+
+  .vehicle-page table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .vehicle-page h2 {
+    font-size: 20px;
+  }
+}

@@ -1,0 +1,21 @@
+Dynamic Dashboard Update
+========================
+
+The dashboard cards and recent activity/security-alert sections are now connected to the backend.
+
+Changed:
+- Added GET /api/automation/dashboard-summary (JWT protected).
+- Total Vehicles comes from Vehicle collection.
+- Inside Campus comes from active EntryExit records.
+- Parking Occupied comes from active Parking records.
+- Security Alerts comes from active SecurityAlert records.
+- Recent Campus Activity comes from current EntryExit, Parking and SecurityAlert records.
+- Recent Security Alerts comes from current SecurityAlert records.
+- Dashboard refreshes every 5 seconds while open.
+- Hardcoded sample values such as 245, 68, 52 and 03 are removed.
+- Dashboard uses the existing CVRU campus image when no real camera image is available.
+
+Important:
+- Existing .env files were intentionally not included in this source ZIP.
+- Keep your existing local .env files.
+- node_modules and dist were intentionally excluded. Run npm install before running the frontend if needed.

@@ -1,0 +1,7 @@
+NEXT 11 - USER MANAGEMENT
+- Rebuilt User Management UI to match the CVRU module visual system.
+- Added live user statistics, search, role/status filters and responsive user directory.
+- Added Admin Create User form using existing POST /api/auth/users route.
+- Added Edit User form using existing PUT /api/auth/users/:id route.
+- Preserved approve, reject/restore, delete APIs and admin protection.
+- No authentication or backend business logic removed.

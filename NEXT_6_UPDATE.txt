@@ -1,0 +1,9 @@
+NEXT 6 — CAMERA MONITORING UI REFINEMENT
+
+- Preserved existing webcam, OCR, plate validation, duplicate protection and automation API logic.
+- Refined Camera Monitoring page to match the CVRU dashboard visual system.
+- Added compact university-style header, stats cards, camera cards, status pills, buttons and responsive layout.
+- Replaced camera/vehicle/OCR emoji placeholders with neutral UI glyphs.
+- Improved spacing, borders, shadows, typography and responsive behavior.
+- Kept Main Gate and Parking Camera functionality unchanged.
+- Kept recent detections session data and OCR output behavior unchanged.
