@@ -6,37 +6,32 @@ function Login({ onBack, onLogin }) {
   // PAGE MODE
   // =================================================
 
-  const [isRegisterMode, setIsRegisterMode] =
-    useState(false);
+  const [isRegisterMode, setIsRegisterMode] = useState(false);
+  const [isVerificationMode, setIsVerificationMode] = useState(false);
 
   // =================================================
   // LOGIN STATE
   // =================================================
 
-  const [loginRole, setLoginRole] =
-    useState("admin");
-
-  const [loginEmail, setLoginEmail] =
-    useState("");
-
-  const [loginPassword, setLoginPassword] =
-    useState("");
+  const [loginRole, setLoginRole] = useState("admin");
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
 
   // =================================================
   // REGISTER STATE
   // =================================================
 
-  const [registerRole, setRegisterRole] =
-    useState("student");
+  const [registerRole, setRegisterRole] = useState("student");
+  const [registerName, setRegisterName] = useState("");
+  const [registerEmail, setRegisterEmail] = useState("");
+  const [registerPassword, setRegisterPassword] = useState("");
 
-  const [registerName, setRegisterName] =
-    useState("");
+  // =================================================
+  // EMAIL VERIFICATION STATE
+  // =================================================
 
-  const [registerEmail, setRegisterEmail] =
-    useState("");
-
-  const [registerPassword, setRegisterPassword] =
-    useState("");
+  const [verificationEmail, setVerificationEmail] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
 
   // =================================================
   // COMMON STATE
@@ -45,6 +40,8 @@ function Login({ onBack, onLogin }) {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const API_URL = import.meta.env.VITE_API_URL;
 
   // =================================================
   // LOGIN
@@ -55,52 +52,54 @@ function Login({ onBack, onLogin }) {
 
     setError("");
     setMessage("");
+
+    if (!loginEmail || !loginPassword) {
+      setError("Email aur password enter karein.");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/auth/login`,
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type": "application/json",
-          },
-
-          body: JSON.stringify({
-            email: loginEmail,
-            password: loginPassword,
-            role: loginRole,
-          }),
-        }
-      );
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: loginEmail.trim(),
+          password: loginPassword,
+          role: loginRole,
+        }),
+      });
 
       const data = await response.json();
 
+      // IMPORTANT:
+      // Normal LOGIN must never open the OTP/verification screen.
+      // Email verification is completed immediately after REGISTRATION.
+      // If an old/unverified account tries to login, show the backend
+      // message here instead of asking for the code during login.
       if (!response.ok || !data.success) {
-        setError(
-          data.message || "Login failed"
-        );
+        if (data.requiresEmailVerification) {
+          setError(
+            data.message ||
+              "Please verify your email before logging in."
+          );
+          return;
+        }
+        setError(data.message || "Login failed");
         return;
       }
 
       // JWT token save
-      localStorage.setItem(
-        "token",
-        data.token
-      );
+      localStorage.setItem("token", data.token);
 
       // Login successful
       onLogin(data.user);
     } catch (error) {
-      console.error(
-        "LOGIN ERROR:",
-        error
-      );
-
-      setError(
-        "Server se connection nahi ho pa raha."
-      );
+      console.error("LOGIN ERROR:", error);
+      setError("Server se connection nahi ho pa raha.");
     } finally {
       setLoading(false);
     }
@@ -115,23 +114,168 @@ function Login({ onBack, onLogin }) {
 
     setError("");
     setMessage("");
+
+    if (!registerName || !registerEmail || !registerPassword) {
+      setError("Name, email aur password enter karein.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${API_URL}/auth/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: registerName.trim(),
+          email: registerEmail.trim(),
+          password: registerPassword,
+          role: registerRole,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        setError(data.message || "Registration failed");
+        return;
+      }
+
+      // =================================================
+      // REGISTRATION SUCCESS -> EMAIL VERIFICATION
+      // =================================================
+
+      setVerificationEmail(registerEmail.trim());
+      setVerificationCode("");
+      setIsVerificationMode(true);
+      setIsRegisterMode(false);
+
+      setError("");
+
+      setMessage(
+        data.message ||
+          "Verification code aapke email par bheja gaya hai."
+      );
+
+      // Keep login role/email ready in case user returns to login
+      setLoginEmail(registerEmail.trim());
+      setLoginRole(registerRole);
+      setLoginPassword("");
+
+      // Clear registration fields
+      setRegisterName("");
+      setRegisterEmail("");
+      setRegisterPassword("");
+    } catch (error) {
+      console.error("REGISTER ERROR:", error);
+
+      setError("Server se connection nahi ho pa raha.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // =================================================
+  // VERIFY EMAIL
+  // =================================================
+
+  const handleVerifyEmail = async (e) => {
+    e.preventDefault();
+
+    setError("");
+    setMessage("");
+
+    const cleanCode = verificationCode.replace(/\D/g, "");
+
+    if (!verificationEmail) {
+      setError("Verification email missing hai.");
+      return;
+    }
+
+    if (cleanCode.length !== 6) {
+      setError("6-digit verification code enter karein.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${API_URL}/auth/verify-email`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: verificationEmail.trim(),
+          code: cleanCode,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        setError(data.message || "Email verification failed.");
+        return;
+      }
+
+      setError("");
+
+      if (data.requiresApproval) {
+        setMessage(
+          data.message ||
+            "Email verified successfully. Admin approval is required before login."
+        );
+      } else {
+        setMessage(
+          data.message ||
+            "Email verified successfully. You can now login."
+        );
+      }
+
+      // Return to login after a successful verification
+      setLoginEmail(verificationEmail.trim());
+
+      // If verification was started from registration,
+      // keep the selected role for the login form.
+      setIsVerificationMode(false);
+      setIsRegisterMode(false);
+      setVerificationCode("");
+    } catch (error) {
+      console.error("VERIFY EMAIL ERROR:", error);
+
+      setError("Server se connection nahi ho pa raha.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // =================================================
+  // RESEND VERIFICATION CODE
+  // =================================================
+
+  const handleResendVerification = async () => {
+    setError("");
+    setMessage("");
+
+    if (!verificationEmail) {
+      setError("Verification email missing hai.");
+      return;
+    }
+
     setLoading(true);
 
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/auth/register`,
+        `${API_URL}/auth/resend-verification`,
         {
           method: "POST",
-
           headers: {
             "Content-Type": "application/json",
           },
-
           body: JSON.stringify({
-            name: registerName,
-            email: registerEmail,
-            password: registerPassword,
-            role: registerRole,
+            email: verificationEmail.trim(),
           }),
         }
       );
@@ -140,48 +284,21 @@ function Login({ onBack, onLogin }) {
 
       if (!response.ok || !data.success) {
         setError(
-          data.message ||
-            "Registration failed"
+          data.message || "Verification code resend nahi ho saka."
         );
         return;
       }
 
-      // =================================================
-      // REGISTRATION SUCCESS
-      // =================================================
-
-      setError("");
+      setVerificationCode("");
 
       setMessage(
         data.message ||
-          "Registration successful."
+          "New verification code email par bhej diya gaya hai."
       );
-
-      // Login form mein email automatically fill
-      setLoginEmail(registerEmail);
-
-      // Requested role login ke liye bhi select rahega
-      setLoginRole(registerRole);
-
-      // Password security ke liye clear
-      setLoginPassword("");
-
-      // Registration fields clear
-      setRegisterName("");
-      setRegisterEmail("");
-      setRegisterPassword("");
-
-      // Login page par switch
-      setIsRegisterMode(false);
     } catch (error) {
-      console.error(
-        "REGISTER ERROR:",
-        error
-      );
+      console.error("RESEND VERIFICATION ERROR:", error);
 
-      setError(
-        "Server se connection nahi ho pa raha."
-      );
+      setError("Server se connection nahi ho pa raha.");
     } finally {
       setLoading(false);
     }
@@ -195,302 +312,226 @@ function Login({ onBack, onLogin }) {
     setError("");
     setMessage("");
     setLoading(false);
-    setIsRegisterMode(
-      !isRegisterMode
-    );
+    setIsVerificationMode(false);
+    setIsRegisterMode(!isRegisterMode);
   };
+
+  // =================================================
+  // BACK TO LOGIN FROM VERIFICATION
+  // =================================================
+
+  const backToLogin = () => {
+    setError("");
+    setMessage("");
+    setLoading(false);
+    setIsVerificationMode(false);
+    setIsRegisterMode(false);
+    setVerificationCode("");
+  };
+
+  // =================================================
+  // SHARED PAGE SHELL
+  // =================================================
+
+  const pageShell = (children, showBack = true) => (
+    <div className="login-page cvru-login-page">
+      <div className="cvru-bg-overlay" />
+
+      <div className="cvru-university-branding">
+        <img
+          src="/cvru-logo.png"
+          alt="Dr. C. V. Raman University Logo"
+          className="cvru-logo"
+        />
+        <div className="cvru-university-name">DR. CV RAMAN UNIVERSITY</div>
+        <div className="cvru-university-line">
+          <span />
+          <b>VAISHALI, BIHAR</b>
+          <span />
+        </div>
+        <div className="cvru-tagline">KNOWLEDGE • INNOVATION • EXCELLENCE</div>
+      </div>
+
+      {showBack && (
+        <button className="cvru-back-btn" onClick={onBack} type="button">
+          ← Back
+        </button>
+      )}
+
+      <div className="cvru-login-panel">
+        {children}
+      </div>
+    </div>
+  );
+
+  // =================================================
+  // VERIFICATION PAGE
+  // =================================================
+
+  if (isVerificationMode) {
+    return pageShell(
+      <>
+        <div className="cvru-panel-brand">
+          <div className="cvru-shield">✓</div>
+          <div>
+            <div className="cvru-panel-title">Campus Surveillance</div>
+            <div className="cvru-panel-subtitle">Secure • Monitor • Protect</div>
+          </div>
+        </div>
+
+        <div className="cvru-divider" />
+
+        <h2 className="cvru-heading">Verify Your Email</h2>
+        <p className="cvru-description">
+          6-digit verification code aapke registered email par bheja gaya hai.
+        </p>
+
+        <div className="cvru-email-chip">{verificationEmail}</div>
+
+        <form onSubmit={handleVerifyEmail} className="cvru-form">
+          <label>Verification Code</label>
+          <input
+            className="cvru-input cvru-code-input"
+            type="text"
+            inputMode="numeric"
+            maxLength={6}
+            value={verificationCode}
+            onChange={(e) =>
+              setVerificationCode(e.target.value.replace(/\D/g, "").slice(0, 6))
+            }
+            placeholder="Enter 6-digit code"
+            autoComplete="one-time-code"
+            required
+          />
+
+          {message && <p className="cvru-message success">{message}</p>}
+          {error && <p className="cvru-message error">{error}</p>}
+
+          <button className="cvru-primary-btn" type="submit" disabled={loading}>
+            {loading ? "Verifying..." : "Verify Email →"}
+          </button>
+        </form>
+
+        <button
+          className="cvru-secondary-btn"
+          type="button"
+          onClick={handleResendVerification}
+          disabled={loading}
+        >
+          Resend Verification Code
+        </button>
+
+        <button className="cvru-text-btn" type="button" onClick={backToLogin}>
+          Back to Login
+        </button>
+
+        <p className="cvru-footer-text">
+          Email verification is required before account access.
+        </p>
+      </>
+    );
+  }
 
   // =================================================
   // REGISTER PAGE
   // =================================================
 
   if (isRegisterMode) {
-    return (
-      <div className="login-page">
-        <div className="login-container">
-
-          <button
-            className="back-btn"
-            onClick={onBack}
-            type="button"
-          >
-            ← Back to Home
-          </button>
-
-          <div className="login-card">
-
-            <div className="login-logo">
-              🚗
-            </div>
-
-            <h1>
-              Create Account
-            </h1>
-
-            <p className="login-subtitle">
-              Register for Campus Surveillance System
-            </p>
-
-            <form
-              onSubmit={
-                handleRegister
-              }
-            >
-
-              {/* NAME */}
-
-              <label>
-                Full Name
-              </label>
-
-              <input
-                type="text"
-                placeholder="Enter your full name"
-                value={registerName}
-                onChange={(e) =>
-                  setRegisterName(
-                    e.target.value
-                  )
-                }
-                required
-              />
-
-              {/* EMAIL */}
-
-              <label>
-                Email Address
-              </label>
-
-              <input
-                type="email"
-                placeholder="Enter your email"
-                value={registerEmail}
-                onChange={(e) =>
-                  setRegisterEmail(
-                    e.target.value
-                  )
-                }
-                required
-              />
-
-              {/* PASSWORD */}
-
-              <label>
-                Password
-              </label>
-
-              <input
-                type="password"
-                placeholder="Minimum 6 characters"
-                value={
-                  registerPassword
-                }
-                onChange={(e) =>
-                  setRegisterPassword(
-                    e.target.value
-                  )
-                }
-                minLength={6}
-                required
-              />
-
-              {/* ROLE */}
-
-              <label>
-                Select Requested Role
-              </label>
-
-              <div
-                className="role-buttons"
-                style={{
-                  gridTemplateColumns:
-                    "repeat(2, 1fr)",
-                }}
-              >
-
-                {/* STUDENT */}
-
-                <button
-                  type="button"
-                  className={
-                    registerRole ===
-                    "student"
-                      ? "role active"
-                      : "role"
-                  }
-                  onClick={() =>
-                    setRegisterRole(
-                      "student"
-                    )
-                  }
-                >
-                  👨‍🎓
-                  <span>
-                    Student
-                  </span>
-                </button>
-
-                {/* STAFF */}
-
-                <button
-                  type="button"
-                  className={
-                    registerRole ===
-                    "staff"
-                      ? "role active"
-                      : "role"
-                  }
-                  onClick={() =>
-                    setRegisterRole(
-                      "staff"
-                    )
-                  }
-                >
-                  👨‍💼
-                  <span>
-                    Staff
-                  </span>
-                </button>
-
-                {/* SECURITY */}
-
-                <button
-                  type="button"
-                  className={
-                    registerRole ===
-                    "security"
-                      ? "role active"
-                      : "role"
-                  }
-                  onClick={() =>
-                    setRegisterRole(
-                      "security"
-                    )
-                  }
-                >
-                  👮
-                  <span>
-                    Security Guard
-                  </span>
-                </button>
-
-                {/* ADMIN */}
-
-                <button
-                  type="button"
-                  className={
-                    registerRole ===
-                    "admin"
-                      ? "role active"
-                      : "role"
-                  }
-                  onClick={() =>
-                    setRegisterRole(
-                      "admin"
-                    )
-                  }
-                >
-                  🛡️
-                  <span>
-                    Admin
-                  </span>
-                </button>
-
-              </div>
-
-              {/* ROLE INFORMATION */}
-
-              <div
-                style={{
-                  marginTop: "12px",
-                  padding: "12px",
-                  borderRadius: "8px",
-                  background:
-                    registerRole ===
-                    "student"
-                      ? "#ecfdf5"
-                      : "#fff7ed",
-                  color:
-                    registerRole ===
-                    "student"
-                      ? "#166534"
-                      : "#9a3412",
-                  fontSize: "13px",
-                  lineHeight: "1.5",
-                }}
-              >
-                {registerRole ===
-                "student"
-                  ? "Student account registration ke baad directly active ho jayega."
-                  : "Is role ke liye Admin approval required hoga. Approval se pehle login allowed nahi hoga."}
-              </div>
-
-              {/* ERROR */}
-
-              {error && (
-                <p
-                  style={{
-                    color: "#dc2626",
-                    marginTop: "12px",
-                    fontWeight: "600",
-                  }}
-                >
-                  {error}
-                </p>
-              )}
-
-              {/* REGISTER BUTTON */}
-
-              <button
-                className="login-submit"
-                type="submit"
-                disabled={loading}
-              >
-                {loading
-                  ? "Creating Account..."
-                  : "Create Account"}
-              </button>
-
-            </form>
-
-            {/* SWITCH TO LOGIN */}
-
-            <p
-              style={{
-                marginTop: "18px",
-                textAlign: "center",
-                color: "#64748b",
-                fontSize: "14px",
-              }}
-            >
-              Already have an account?
-              {" "}
-
-              <button
-                type="button"
-                onClick={
-                  switchMode
-                }
-                style={{
-                  border: "none",
-                  background: "none",
-                  color: "#2563eb",
-                  fontWeight: "700",
-                  cursor: "pointer",
-                }}
-              >
-                Login
-              </button>
-            </p>
-
-            <p className="demo-text">
-              Account access is controlled by the
-              Campus Surveillance System
-            </p>
-
+    return pageShell(
+      <>
+        <div className="cvru-panel-brand">
+          <div className="cvru-shield">✓</div>
+          <div>
+            <div className="cvru-panel-title">Campus Surveillance</div>
+            <div className="cvru-panel-subtitle">Secure • Monitor • Protect</div>
           </div>
         </div>
-      </div>
+
+        <div className="cvru-divider" />
+
+        <h2 className="cvru-heading">Create Account</h2>
+        <p className="cvru-description">
+          Register your account. Email verification is required.
+        </p>
+
+        <form onSubmit={handleRegister} className="cvru-form">
+          <label>Full Name</label>
+          <input
+            className="cvru-input"
+            type="text"
+            value={registerName}
+            onChange={(e) => setRegisterName(e.target.value)}
+            placeholder="Enter your full name"
+            autoComplete="name"
+            required
+          />
+
+          <label>Email Address</label>
+          <input
+            className="cvru-input"
+            type="email"
+            value={registerEmail}
+            onChange={(e) => setRegisterEmail(e.target.value)}
+            placeholder="Enter your email address"
+            autoComplete="email"
+            required
+          />
+
+          <label>Password</label>
+          <input
+            className="cvru-input"
+            type="password"
+            value={registerPassword}
+            onChange={(e) => setRegisterPassword(e.target.value)}
+            placeholder="Create a password"
+            autoComplete="new-password"
+            required
+          />
+
+          <label>Register As</label>
+          <div className="cvru-role-grid">
+            {[
+              ["student", "🎓", "Student"],
+              ["staff", "👤", "Staff"],
+              ["security", "🛡️", "Security Guard"],
+              ["admin", "🔐", "Admin"],
+            ].map(([value, icon, label]) => (
+              <button
+                key={value}
+                type="button"
+                className={`cvru-role-btn ${registerRole === value ? "active" : ""}`}
+                onClick={() => setRegisterRole(value)}
+              >
+                <span>{icon}</span>
+                <strong>{label}</strong>
+              </button>
+            ))}
+          </div>
+
+          <p className="cvru-role-note">
+            Student accounts activate after email verification. Privileged roles
+            require Admin approval after email verification.
+          </p>
+
+          {message && <p className="cvru-message success">{message}</p>}
+          {error && <p className="cvru-message error">{error}</p>}
+
+          <button className="cvru-primary-btn" type="submit" disabled={loading}>
+            {loading ? "Creating Account..." : "Create Account →"}
+          </button>
+        </form>
+
+        <p className="cvru-switch-text">
+          Already have an account?{" "}
+          <button className="cvru-text-link" type="button" onClick={switchMode}>
+            Login
+          </button>
+        </p>
+
+        <p className="cvru-footer-text">
+          Account access is controlled by Campus Surveillance System.
+        </p>
+      </>
     );
   }
 
@@ -498,261 +539,83 @@ function Login({ onBack, onLogin }) {
   // LOGIN PAGE
   // =================================================
 
-  return (
-    <div className="login-page">
-      <div className="login-container">
+  return pageShell(
+    <>
+      <div className="cvru-panel-brand">
+        <div className="cvru-shield">✓</div>
+        <div>
+          <div className="cvru-panel-title">Campus Surveillance System</div>
+          <div className="cvru-panel-subtitle">Secure • Monitor • Protect</div>
+        </div>
+      </div>
 
-        <button
-          className="back-btn"
-          onClick={onBack}
-          type="button"
-        >
-          ← Back to Home
-        </button>
+      <div className="cvru-divider" />
 
-        <div className="login-card">
+      <h2 className="cvru-heading">Welcome Back</h2>
+      <p className="cvru-description">Login to Campus Surveillance System</p>
 
-          <div className="login-logo">
-            🚗
-          </div>
+      <form onSubmit={handleLogin} className="cvru-form">
+        <label>Email Address</label>
+        <input
+          className="cvru-input"
+          type="email"
+          value={loginEmail}
+          onChange={(e) => setLoginEmail(e.target.value)}
+          placeholder="Enter your email address"
+          autoComplete="email"
+          required
+        />
 
-          <h1>
-            Welcome Back
-          </h1>
+        <label>Password</label>
+        <input
+          className="cvru-input"
+          type="password"
+          value={loginPassword}
+          onChange={(e) => setLoginPassword(e.target.value)}
+          placeholder="Enter your password"
+          autoComplete="current-password"
+          required
+        />
 
-          <p className="login-subtitle">
-            Login to Campus Surveillance System
-          </p>
-
-          <form
-            onSubmit={handleLogin}
-          >
-
-            {/* EMAIL */}
-
-            <label>
-              Email Address
-            </label>
-
-            <input
-              type="email"
-              placeholder="Enter your email"
-              value={loginEmail}
-              onChange={(e) =>
-                setLoginEmail(
-                  e.target.value
-                )
-              }
-              required
-            />
-
-            {/* PASSWORD */}
-
-            <label>
-              Password
-            </label>
-
-            <input
-              type="password"
-              placeholder="Enter your password"
-              value={loginPassword}
-              onChange={(e) =>
-                setLoginPassword(
-                  e.target.value
-                )
-              }
-              required
-            />
-
-            {/* ROLE */}
-
-            <label>
-              Select Role
-            </label>
-
-            <div className="role-buttons">
-
-              {/* ADMIN */}
-
-              <button
-                type="button"
-                className={
-                  loginRole ===
-                  "admin"
-                    ? "role active"
-                    : "role"
-                }
-                onClick={() =>
-                  setLoginRole(
-                    "admin"
-                  )
-                }
-              >
-                👨‍💼
-                <span>
-                  Admin
-                </span>
-              </button>
-
-              {/* SECURITY */}
-
-              <button
-                type="button"
-                className={
-                  loginRole ===
-                  "security"
-                    ? "role active"
-                    : "role"
-                }
-                onClick={() =>
-                  setLoginRole(
-                    "security"
-                  )
-                }
-              >
-                👮
-                <span>
-                  Security Guard
-                </span>
-              </button>
-
-              {/* STAFF */}
-
-              <button
-                type="button"
-                className={
-                  loginRole ===
-                  "staff"
-                    ? "role active"
-                    : "role"
-                }
-                onClick={() =>
-                  setLoginRole(
-                    "staff"
-                  )
-                }
-              >
-                👨‍💼
-                <span>
-                  Staff
-                </span>
-              </button>
-
-              {/* STUDENT */}
-
-              <button
-                type="button"
-                className={
-                  loginRole ===
-                  "student"
-                    ? "role active"
-                    : "role"
-                }
-                onClick={() =>
-                  setLoginRole(
-                    "student"
-                  )
-                }
-              >
-                👨‍🎓
-                <span>
-                  Student
-                </span>
-              </button>
-
-            </div>
-
-            {/* SUCCESS / INFO MESSAGE */}
-
-            {message && (
-              <p
-                style={{
-                  color: "#166534",
-                  background:
-                    "#ecfdf5",
-                  padding: "10px",
-                  borderRadius: "8px",
-                  marginTop: "12px",
-                  fontSize: "14px",
-                  lineHeight: "1.5",
-                }}
-              >
-                {message}
-              </p>
-            )}
-
-            {/* ERROR */}
-
-            {error && (
-              <p
-                style={{
-                  color: "#dc2626",
-                  background:
-                    "#fef2f2",
-                  padding: "10px",
-                  borderRadius: "8px",
-                  marginTop: "12px",
-                  fontSize: "14px",
-                  lineHeight: "1.5",
-                }}
-              >
-                {error}
-              </p>
-            )}
-
-            {/* LOGIN BUTTON */}
-
+        <label>Login As</label>
+        <div className="cvru-role-grid login-roles">
+          {[
+            ["admin", "🛡️", "Admin"],
+            ["security", "👮", "Security Guard"],
+            ["staff", "👤", "Staff"],
+            ["student", "🎓", "Student"],
+          ].map(([value, icon, label]) => (
             <button
-              className="login-submit"
-              type="submit"
-              disabled={loading}
-            >
-              {loading
-                ? "Logging in..."
-                : "Login"}
-            </button>
-
-          </form>
-
-          {/* REGISTER LINK */}
-
-          <p
-            style={{
-              marginTop: "18px",
-              textAlign: "center",
-              color: "#64748b",
-              fontSize: "14px",
-            }}
-          >
-            Don't have an account?
-            {" "}
-
-            <button
+              key={value}
               type="button"
-              onClick={
-                switchMode
-              }
-              style={{
-                border: "none",
-                background: "none",
-                color: "#2563eb",
-                fontWeight: "700",
-                cursor: "pointer",
-              }}
+              className={`cvru-role-btn ${loginRole === value ? "active" : ""}`}
+              onClick={() => setLoginRole(value)}
             >
-              Create Account
+              <span>{icon}</span>
+              <strong>{label}</strong>
             </button>
-          </p>
-
-          <p className="demo-text">
-            Secure login powered by Campus
-            Surveillance System
-          </p>
-
+          ))}
         </div>
 
-      </div>
-    </div>
+        {message && <p className="cvru-message success">{message}</p>}
+        {error && <p className="cvru-message error">{error}</p>}
+
+        <button className="cvru-primary-btn" type="submit" disabled={loading}>
+          {loading ? "Logging in..." : "Login →"}
+        </button>
+      </form>
+
+      <p className="cvru-switch-text">
+        Don't have an account?{" "}
+        <button className="cvru-text-link" type="button" onClick={switchMode}>
+          Create Account
+        </button>
+      </p>
+
+      <p className="cvru-footer-text">
+        🔒 Secure login powered by Campus Surveillance System
+      </p>
+    </>
   );
 }
 

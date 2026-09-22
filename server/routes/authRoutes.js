@@ -1,59 +1,58 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const mongoose = require("mongoose");
 
-const User = require("../models/User");
-
-const authMiddleware = require("../middleware/authMiddleware");
-const {
-  requireRole,
-} = require("../middleware/authMiddleware");
+const User = require("../User");
+const { sendVerificationEmail } = require("../services/emailService");
 
 const router = express.Router();
 
-const ALLOWED_ROLES = [
-  "admin",
-  "security",
-  "staff",
-  "student",
-];
+const PRIVILEGED_ROLES = ["admin", "security", "staff"];
 
-const PRIVILEGED_ROLES = [
-  "admin",
-  "security",
-  "staff",
-];
+const OTP_EXPIRY_MINUTES = 10;
+const RESEND_COOLDOWN_MS = 60 * 1000;
+const RESEND_WINDOW_MS = 24 * 60 * 60 * 1000;
+const MAX_RESENDS_PER_DAY = 5;
 
-// =====================================================
-// HELPER
-// =====================================================
+/* =========================================================
+   HELPERS
+   ========================================================= */
 
-const createToken = (user) => {
-  return jwt.sign(
-    {
-      id: user._id.toString(),
-      role: user.role,
-    },
-    process.env.JWT_SECRET,
-    {
-      expiresIn: "1d",
-    }
+const generateVerificationCode = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+const getOtpExpiry = () => {
+  return new Date(
+    Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000
   );
 };
 
-// =====================================================
-// PUBLIC REGISTER
-// =====================================================
-// Student:
-//   approved immediately
-//
-// Admin / Security / Staff:
-//   pending until Admin approves
-// =====================================================
+const cleanupExpiredUnverifiedUsers = async () => {
+  try {
+    await User.deleteMany({
+      emailVerified: false,
+      emailVerificationExpires: {
+        $ne: null,
+        $lte: new Date(),
+      },
+    });
+  } catch (error) {
+    console.error(
+      "Expired verification cleanup failed:",
+      error.message
+    );
+  }
+};
+
+/* =========================================================
+   REGISTER
+   ========================================================= */
 
 router.post("/register", async (req, res) => {
   try {
+    await cleanupExpiredUnverifiedUsers();
+
     const {
       name,
       email,
@@ -61,144 +60,441 @@ router.post("/register", async (req, res) => {
       role,
     } = req.body;
 
-    if (
-      !name ||
-      !email ||
-      !password ||
-      !role
-    ) {
+    if (!name || !email || !password) {
       return res.status(400).json({
         success: false,
-        message:
-          "Name, email, password and role are required",
+        message: "Name, email and password are required.",
       });
     }
 
-    if (
-      !ALLOWED_ROLES.includes(role)
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid role selected",
-      });
-    }
-
-    const cleanName = name.trim();
-    const cleanEmail =
-      email.trim().toLowerCase();
-
-    if (cleanName.length < 2) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Name must contain at least 2 characters",
-      });
-    }
+    const normalizedEmail = email.trim().toLowerCase();
 
     if (password.length < 6) {
       return res.status(400).json({
         success: false,
-        message:
-          "Password must contain at least 6 characters",
+        message: "Password must be at least 6 characters.",
       });
     }
 
-    const existingUser =
-      await User.findOne({
-        email: cleanEmail,
-      });
+    const requestedRole = role || "student";
 
-    if (existingUser) {
+    const allowedRoles = [
+      "admin",
+      "security",
+      "staff",
+      "student",
+    ];
+
+    if (!allowedRoles.includes(requestedRole)) {
       return res.status(400).json({
         success: false,
-        message:
-          "An account with this email already exists",
+        message: "Invalid role selected.",
       });
     }
 
-    const hashedPassword =
-      await bcrypt.hash(
-        password,
-        10
+    /*
+     * IMPORTANT:
+     * Public users cannot create a trusted admin account.
+     * Admin role requests remain pending.
+     */
+    const existingUser = await User.findOne({
+      email: normalizedEmail,
+    });
+
+    if (existingUser) {
+      /*
+       * Already verified account
+       */
+      if (existingUser.emailVerified) {
+        return res.status(409).json({
+          success: false,
+          message:
+            "An account with this email already exists. Please login.",
+        });
+      }
+
+      /*
+       * Existing unverified account.
+       * Do NOT create another account.
+       */
+      return res.status(409).json({
+        success: false,
+        message:
+          "This email is already registered but not verified. Please use Resend Verification Code.",
+        requiresEmailVerification: true,
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const verificationCode = generateVerificationCode();
+
+    const verificationExpires = getOtpExpiry();
+
+    const user = await User.create({
+      name: name.trim(),
+      email: normalizedEmail,
+      password: hashedPassword,
+
+      role: requestedRole,
+
+      /*
+       * Student can become approved after email verification.
+       * Privileged roles remain pending until admin approval.
+       */
+      status:
+        requestedRole === "student"
+          ? "pending"
+          : "pending",
+
+      emailVerified: false,
+
+      emailVerificationCode: verificationCode,
+      emailVerificationExpires: verificationExpires,
+
+      emailVerificationLastSentAt: new Date(),
+      emailVerificationSendCount: 1,
+      emailVerificationSendWindowStartedAt: new Date(),
+    });
+
+    try {
+      await sendVerificationEmail(
+        user.email,
+        user.name,
+        verificationCode
       );
-
-    // =================================================
-    // STUDENT = AUTO APPROVED
-    // PRIVILEGED = PENDING
-    // =================================================
-
-    const accountStatus =
-      role === "student"
-        ? "approved"
-        : "pending";
-
-    const user =
-      await User.create({
-        name: cleanName,
-        email: cleanEmail,
-        password: hashedPassword,
-        role,
-        status: accountStatus,
+    } catch (emailError) {
+      /*
+       * Email could not be sent.
+       * Remove the newly created unverified account
+       * so user can safely try registration again.
+       */
+      await User.deleteOne({
+        _id: user._id,
       });
 
-    // =================================================
-    // RESPONSE
-    // =================================================
+      console.error(
+        "Verification email failed:",
+        emailError.message
+      );
 
-    if (
-      PRIVILEGED_ROLES.includes(role)
-    ) {
-      return res.status(201).json({
-        success: true,
-        requiresApproval: true,
+      return res.status(500).json({
+        success: false,
         message:
-          "Registration submitted. Admin approval is required before login.",
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          status: user.status,
-        },
+          "Unable to send verification email. Please try again.",
       });
     }
 
     return res.status(201).json({
       success: true,
-      requiresApproval: false,
       message:
-        "Student account created successfully. You can login now.",
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        status: user.status,
-      },
+        "Registration successful. Please verify your email using the verification code sent to your email address.",
+      requiresEmailVerification: true,
+      email: user.email,
+      role: user.role,
+      expiresInMinutes: OTP_EXPIRY_MINUTES,
+    });
+  } catch (error) {
+    console.error("Registration error:", error);
+
+    /*
+     * MongoDB duplicate-key protection
+     */
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message:
+          "An account with this email already exists.",
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Registration failed.",
+    });
+  }
+});
+
+/* =========================================================
+   VERIFY EMAIL
+   ========================================================= */
+
+router.post("/verify-email", async (req, res) => {
+  try {
+    const {
+      email,
+      code,
+    } = req.body;
+
+    if (!email || !code) {
+      return res.status(400).json({
+        success: false,
+        message: "Email and verification code are required.",
+      });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const user = await User.findOne({
+      email: normalizedEmail,
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message:
+          "Verification request not found. Please register again.",
+      });
+    }
+
+    /*
+     * Already verified
+     */
+    if (user.emailVerified) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is already verified.",
+      });
+    }
+
+    /*
+     * OTP expired
+     */
+    if (
+      !user.emailVerificationExpires ||
+      user.emailVerificationExpires.getTime() <= Date.now()
+    ) {
+      await User.deleteOne({
+        _id: user._id,
+      });
+
+      return res.status(400).json({
+        success: false,
+        message:
+          "Verification code has expired. Please register again.",
+        expired: true,
+      });
+    }
+
+    /*
+     * Wrong OTP
+     */
+    if (
+      String(user.emailVerificationCode) !==
+      String(code).trim()
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid verification code.",
+      });
+    }
+
+    /*
+     * EMAIL VERIFIED
+     */
+
+    user.emailVerified = true;
+    user.emailVerificationCode = null;
+    user.emailVerificationExpires = null;
+    user.emailVerificationLastSentAt = null;
+    user.emailVerificationSendCount = 0;
+    user.emailVerificationSendWindowStartedAt = null;
+
+    /*
+     * Student becomes active immediately after verification.
+     *
+     * Privileged roles stay pending for Admin approval.
+     */
+    if (user.role === "student") {
+      user.status = "approved";
+    } else {
+      user.status = "pending";
+    }
+
+    await user.save();
+
+    return res.json({
+      success: true,
+      message:
+        user.role === "student"
+          ? "Email verified successfully. You can now login."
+          : "Email verified successfully. Your account is now pending Admin approval.",
+      emailVerified: true,
+      status: user.status,
+      role: user.role,
     });
   } catch (error) {
     console.error(
-      "REGISTRATION ERROR:",
+      "Email verification error:",
       error
     );
 
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: "Email verification failed.",
     });
   }
 });
 
-// =====================================================
-// LOGIN
-// =====================================================
+/* =========================================================
+   RESEND VERIFICATION CODE
+   ========================================================= */
+
+router.post("/resend-verification", async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required.",
+      });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const user = await User.findOne({
+      email: normalizedEmail,
+    });
+
+    /*
+     * Do not reveal too much information about accounts.
+     */
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message:
+          "Verification request not found. Please register again.",
+      });
+    }
+
+    /*
+     * Already verified
+     */
+    if (user.emailVerified) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is already verified. Please login.",
+      });
+    }
+
+    const now = Date.now();
+
+    /*
+     * Start/reset 24-hour resend window
+     */
+    if (
+      !user.emailVerificationSendWindowStartedAt ||
+      now -
+        user.emailVerificationSendWindowStartedAt.getTime() >=
+        RESEND_WINDOW_MS
+    ) {
+      user.emailVerificationSendWindowStartedAt =
+        new Date();
+
+      user.emailVerificationSendCount = 0;
+    }
+
+    /*
+     * Daily resend limit
+     */
+    if (
+      user.emailVerificationSendCount >=
+      MAX_RESENDS_PER_DAY
+    ) {
+      return res.status(429).json({
+        success: false,
+        message:
+          "Too many verification code requests. Please try again after 24 hours.",
+        retryAfterHours: 24,
+      });
+    }
+
+    /*
+     * 60-second cooldown
+     */
+    if (user.emailVerificationLastSentAt) {
+      const elapsed =
+        now -
+        user.emailVerificationLastSentAt.getTime();
+
+      if (elapsed < RESEND_COOLDOWN_MS) {
+        const remainingSeconds = Math.ceil(
+          (RESEND_COOLDOWN_MS - elapsed) / 1000
+        );
+
+        return res.status(429).json({
+          success: false,
+          message: `Please wait ${remainingSeconds} seconds before requesting another code.`,
+          retryAfterSeconds: remainingSeconds,
+        });
+      }
+    }
+
+    /*
+     * Generate new OTP
+     */
+    const verificationCode =
+      generateVerificationCode();
+
+    user.emailVerificationCode =
+      verificationCode;
+
+    user.emailVerificationExpires =
+      getOtpExpiry();
+
+    user.emailVerificationLastSentAt =
+      new Date();
+
+    user.emailVerificationSendCount += 1;
+
+    await user.save();
+
+    try {
+      await sendVerificationEmail(
+        user.email,
+        user.name,
+        verificationCode
+      );
+    } catch (emailError) {
+      console.error(
+        "Resend email failed:",
+        emailError.message
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Unable to send verification email. Please try again later.",
+      });
+    }
+
+    return res.json({
+      success: true,
+      message:
+        "A new verification code has been sent to your email.",
+      expiresInMinutes: OTP_EXPIRY_MINUTES,
+      resendAvailableAfterSeconds: 60,
+    });
+  } catch (error) {
+    console.error(
+      "Resend verification error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Unable to resend verification code.",
+    });
+  }
+});
+
+/* =========================================================
+   LOGIN
+   ========================================================= */
 
 router.post("/login", async (req, res) => {
-  console.log("=================================");
-  console.log("LOGIN REQUEST RECEIVED");
-  console.log("=================================");
-
   try {
     const {
       email,
@@ -206,943 +502,226 @@ router.post("/login", async (req, res) => {
       role,
     } = req.body;
 
-    console.log(
-      "Login Email:",
-      email
-    );
-
-    console.log(
-      "Selected Role:",
-      role
-    );
-
     if (!email || !password) {
       return res.status(400).json({
         success: false,
-        message:
-          "Email and password are required",
+        message: "Email and password are required.",
       });
     }
 
-    const cleanEmail =
-      email.trim().toLowerCase();
+    const normalizedEmail = email.trim().toLowerCase();
 
-    const user =
-      await User.findOne({
-        email: cleanEmail,
-      });
+    const user = await User.findOne({
+      email: normalizedEmail,
+    });
 
     if (!user) {
-      console.log(
-        "USER NOT FOUND"
-      );
-
       return res.status(401).json({
         success: false,
-        message:
-          "Invalid email or password",
+        message: "Invalid email or password.",
       });
     }
 
-    console.log(
-      "USER FOUND:",
-      user.email
-    );
-
-    const isPasswordCorrect =
-      await bcrypt.compare(
-        password,
-        user.password
-      );
-
-    console.log(
-      "PASSWORD CHECK:",
-      isPasswordCorrect
-    );
-
-    if (!isPasswordCorrect) {
-      return res.status(401).json({
+    /*
+     * Email verification required
+     */
+    if (!user.emailVerified) {
+      return res.status(403).json({
         success: false,
         message:
-          "Invalid email or password",
+          "Please verify your email before logging in.",
+        requiresEmailVerification: true,
       });
     }
 
-    // =================================================
-    // ROLE MATCH
-    // =================================================
+    /*
+     * Password check
+     */
+    const passwordMatch = await bcrypt.compare(
+      password,
+      user.password
+    );
 
+    if (!passwordMatch) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password.",
+      });
+    }
+
+    /*
+     * Requested role must match actual role
+     */
+    if (role && role !== user.role) {
+      return res.status(403).json({
+        success: false,
+        message:
+          "Selected login role does not match your account role.",
+      });
+    }
+
+    /*
+     * Privileged users must be approved by Admin
+     */
     if (
-      role &&
-      ALLOWED_ROLES.includes(role) &&
-      role !== user.role
+      PRIVILEGED_ROLES.includes(user.role) &&
+      user.status !== "approved"
     ) {
       return res.status(403).json({
         success: false,
         message:
-          "Selected role does not match this account",
+          "Your account is waiting for Admin approval.",
+        pendingApproval: true,
       });
     }
 
-    // =================================================
-    // LEGACY ACCOUNT HANDLING
-    // =================================================
-    // Existing users created before status field:
-    //
-    // Existing admin -> approved
-    // Existing student -> approved
-    // Existing security/staff -> pending
-    // =================================================
-
-    if (!user.status) {
-      if (
-        user.role === "admin" ||
-        user.role === "student"
-      ) {
-        user.status = "approved";
-
-        await user.save();
-      } else {
-        user.status = "pending";
-
-        await user.save();
+    /*
+     * JWT
+     */
+    const token = jwt.sign(
+      {
+        id: user._id,
+        email: user.email,
+        role: user.role,
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "1d",
       }
-    }
-
-    console.log(
-      "ACCOUNT STATUS:",
-      user.status
     );
 
-    // =================================================
-    // APPROVAL CHECK
-    // =================================================
-
-    if (
-      PRIVILEGED_ROLES.includes(
-        user.role
-      )
-    ) {
-      if (user.status === "pending") {
-        return res.status(403).json({
-          success: false,
-          requiresApproval: true,
-          message:
-            "Your account is waiting for Admin approval.",
-        });
-      }
-
-      if (
-        user.status === "rejected"
-      ) {
-        return res.status(403).json({
-          success: false,
-          requiresApproval: false,
-          message:
-            "Your account request was rejected by Admin.",
-        });
-      }
-    }
-
-    // =================================================
-    // STUDENT REJECTION CHECK
-    // =================================================
-
-    if (
-      user.status === "rejected"
-    ) {
-      return res.status(403).json({
-        success: false,
-        message:
-          "This account has been rejected.",
-      });
-    }
-
-    // =================================================
-    // JWT SECRET
-    // =================================================
-
-    if (!process.env.JWT_SECRET) {
-      console.error(
-        "JWT_SECRET IS MISSING"
-      );
-
-      return res.status(500).json({
-        success: false,
-        message:
-          "JWT_SECRET is missing in server .env file",
-      });
-    }
-
-    const token =
-      createToken(user);
-
-    console.log(
-      "LOGIN SUCCESS"
-    );
-
-    return res.status(200).json({
+    return res.json({
       success: true,
-      message:
-        "Login successful",
+      message: "Login successful.",
       token,
+
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
         status: user.status,
+        emailVerified: user.emailVerified,
       },
     });
   } catch (error) {
-    console.error(
-      "LOGIN ERROR:",
-      error
-    );
+    console.error("Login error:", error);
 
     return res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: "Login failed.",
     });
   }
 });
 
-// =====================================================
-// CURRENT USER
-// GET /api/auth/me
-// =====================================================
+/* =========================================================
+   GET CURRENT USER
+   ========================================================= */
 
-router.get(
-  "/me",
-  authMiddleware,
-  async (req, res) => {
-    try {
-      if (
-        !mongoose.Types.ObjectId.isValid(
-          req.user.id
-        )
-      ) {
-        return res.status(401).json({
-          success: false,
-          message:
-            "Invalid user token",
-        });
-      }
+router.get("/me", async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization || "";
 
-      const user =
-        await User.findById(
-          req.user.id
-        ).select(
-          "_id name email role status createdAt updatedAt"
-        );
-
-      if (!user) {
-        return res.status(404).json({
-          success: false,
-          message:
-            "User not found",
-        });
-      }
-
-      return res.status(200).json({
-        success: true,
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          status: user.status,
-          createdAt:
-            user.createdAt,
-          updatedAt:
-            user.updatedAt,
-        },
-      });
-    } catch (error) {
-      console.error(
-        "GET CURRENT USER ERROR:",
-        error
-      );
-
-      return res.status(500).json({
+    if (!authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({
         success: false,
-        message: "Server error",
+        message: "Authorization token required.",
       });
     }
-  }
-);
 
-// =====================================================
-// GET ALL USERS
-// ADMIN ONLY
-// =====================================================
+    const token = authHeader.split(" ")[1];
 
-router.get(
-  "/users",
-  authMiddleware,
-  requireRole("admin"),
-  async (req, res) => {
-    try {
-      const users =
-        await User.find({})
-          .select(
-            "_id name email role status createdAt updatedAt"
-          )
-          .sort({
-            createdAt: -1,
-          });
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET
+    );
 
-      return res.status(200).json({
-        success: true,
-        users,
-      });
-    } catch (error) {
-      console.error(
-        "GET USERS ERROR:",
-        error
-      );
+    const user = await User.findById(decoded.id).select(
+      "-password -emailVerificationCode"
+    );
 
-      return res.status(500).json({
+    if (!user) {
+      return res.status(404).json({
         success: false,
-        message: "Server error",
+        message: "User not found.",
       });
     }
+
+    return res.json({
+      success: true,
+      user,
+    });
+  } catch (error) {
+    return res.status(401).json({
+      success: false,
+      message: "Invalid or expired token.",
+    });
   }
-);
+});
 
-// =====================================================
-// GET PENDING REQUESTS
-// ADMIN ONLY
-// =====================================================
+/* =========================================================
+   GET ALL USERS
+   ========================================================= */
 
-router.get(
-  "/users/pending",
-  authMiddleware,
-  requireRole("admin"),
-  async (req, res) => {
-    try {
-      const users =
-        await User.find({
-          status: "pending",
-          role: {
-            $in: PRIVILEGED_ROLES,
-          },
-        })
-          .select(
-            "_id name email role status createdAt"
-          )
-          .sort({
-            createdAt: -1,
-          });
+router.get("/users", async (req, res) => {
+  try {
+    const users = await User.find()
+      .select(
+        "-password -emailVerificationCode -emailVerificationExpires"
+      )
+      .sort({ createdAt: -1 });
 
-      return res.status(200).json({
-        success: true,
-        users,
-      });
-    } catch (error) {
-      console.error(
-        "GET PENDING USERS ERROR:",
-        error
-      );
+    return res.json({
+      success: true,
+      users,
+    });
+  } catch (error) {
+    console.error(
+      "Get users error:",
+      error.message
+    );
 
-      return res.status(500).json({
-        success: false,
-        message: "Server error",
-      });
-    }
+    return res.status(500).json({
+      success: false,
+      message: "Unable to fetch users.",
+    });
   }
-);
+});
 
-// =====================================================
-// ADMIN CREATE USER
-// ADMIN ONLY
-// =====================================================
+/* =========================================================
+   GET PENDING PRIVILEGED USERS
+   ========================================================= */
 
-router.post(
-  "/users",
-  authMiddleware,
-  requireRole("admin"),
-  async (req, res) => {
-    try {
-      const {
-        name,
-        email,
-        password,
-        role,
-      } = req.body;
+router.get("/users/pending", async (req, res) => {
+  try {
+    const users = await User.find({
+      status: "pending",
+      emailVerified: true,
+      role: {
+        $in: PRIVILEGED_ROLES,
+      },
+    })
+      .select(
+        "-password -emailVerificationCode -emailVerificationExpires"
+      )
+      .sort({ createdAt: -1 });
 
-      if (
-        !name ||
-        !email ||
-        !password ||
-        !role
-      ) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Name, email, password and role are required",
-        });
-      }
+    return res.json({
+      success: true,
+      users,
+    });
+  } catch (error) {
+    console.error(
+      "Get pending users error:",
+      error.message
+    );
 
-      if (
-        !ALLOWED_ROLES.includes(
-          role
-        )
-      ) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Invalid role",
-        });
-      }
-
-      const cleanName =
-        name.trim();
-
-      const cleanEmail =
-        email.trim().toLowerCase();
-
-      const existingUser =
-        await User.findOne({
-          email: cleanEmail,
-        });
-
-      if (existingUser) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "User already exists",
-        });
-      }
-
-      const hashedPassword =
-        await bcrypt.hash(
-          password,
-          10
-        );
-
-      const user =
-        await User.create({
-          name: cleanName,
-          email: cleanEmail,
-          password:
-            hashedPassword,
-          role,
-          status: "approved",
-        });
-
-      return res.status(201).json({
-        success: true,
-        message:
-          "User created successfully",
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          status: user.status,
-        },
-      });
-    } catch (error) {
-      console.error(
-        "ADMIN CREATE USER ERROR:",
-        error
-      );
-
-      return res.status(500).json({
-        success: false,
-        message: "Server error",
-      });
-    }
+    return res.status(500).json({
+      success: false,
+      message:
+        "Unable to fetch pending users.",
+    });
   }
-);
-
-// =====================================================
-// APPROVE USER
-// ADMIN ONLY
-// PUT /api/auth/users/:id/approve
-// =====================================================
-
-router.put(
-  "/users/:id/approve",
-  authMiddleware,
-  requireRole("admin"),
-  async (req, res) => {
-    try {
-      const userId =
-        req.params.id;
-
-      if (
-        !mongoose.Types.ObjectId.isValid(
-          userId
-        )
-      ) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Invalid user ID",
-        });
-      }
-
-      if (
-        userId === req.user.id
-      ) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "You cannot approve your own account",
-        });
-      }
-
-      const user =
-        await User.findById(
-          userId
-        );
-
-      if (!user) {
-        return res.status(404).json({
-          success: false,
-          message:
-            "User not found",
-        });
-      }
-
-      if (
-        !PRIVILEGED_ROLES.includes(
-          user.role
-        )
-      ) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Only admin, security and staff requests require approval",
-        });
-      }
-
-      user.status = "approved";
-
-      await user.save();
-
-      return res.status(200).json({
-        success: true,
-        message:
-          "User approved successfully",
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          status: user.status,
-        },
-      });
-    } catch (error) {
-      console.error(
-        "APPROVE USER ERROR:",
-        error
-      );
-
-      return res.status(500).json({
-        success: false,
-        message: "Server error",
-      });
-    }
-  }
-);
-
-// =====================================================
-// REJECT USER
-// ADMIN ONLY
-// PUT /api/auth/users/:id/reject
-// =====================================================
-
-router.put(
-  "/users/:id/reject",
-  authMiddleware,
-  requireRole("admin"),
-  async (req, res) => {
-    try {
-      const userId =
-        req.params.id;
-
-      if (
-        !mongoose.Types.ObjectId.isValid(
-          userId
-        )
-      ) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Invalid user ID",
-        });
-      }
-
-      if (
-        userId === req.user.id
-      ) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "You cannot reject your own account",
-        });
-      }
-
-      const user =
-        await User.findById(
-          userId
-        );
-
-      if (!user) {
-        return res.status(404).json({
-          success: false,
-          message:
-            "User not found",
-        });
-      }
-
-      user.status = "rejected";
-
-      await user.save();
-
-      return res.status(200).json({
-        success: true,
-        message:
-          "User request rejected",
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          status: user.status,
-        },
-      });
-    } catch (error) {
-      console.error(
-        "REJECT USER ERROR:",
-        error
-      );
-
-      return res.status(500).json({
-        success: false,
-        message: "Server error",
-      });
-    }
-  }
-);
-
-// =====================================================
-// UPDATE USER
-// ADMIN ONLY
-// =====================================================
-
-router.put(
-  "/users/:id",
-  authMiddleware,
-  requireRole("admin"),
-  async (req, res) => {
-    try {
-      const {
-        name,
-        email,
-        password,
-        role,
-      } = req.body;
-
-      const userId =
-        req.params.id;
-
-      if (
-        !mongoose.Types.ObjectId.isValid(
-          userId
-        )
-      ) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Invalid user ID",
-        });
-      }
-
-      const user =
-        await User.findById(
-          userId
-        );
-
-      if (!user) {
-        return res.status(404).json({
-          success: false,
-          message:
-            "User not found",
-        });
-      }
-
-      // =================================================
-      // SELF ROLE PROTECTION
-      // =================================================
-
-      if (
-        user._id.toString() ===
-          req.user.id &&
-        role &&
-        role !== "admin"
-      ) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "You cannot remove your own admin role",
-        });
-      }
-
-      // =================================================
-      // ROLE VALIDATION
-      // =================================================
-
-      if (
-        role &&
-        !ALLOWED_ROLES.includes(
-          role
-        )
-      ) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Invalid role",
-        });
-      }
-
-      // =================================================
-      // LAST ADMIN PROTECTION
-      // =================================================
-
-      if (
-        user.role === "admin" &&
-        role &&
-        role !== "admin"
-      ) {
-        const adminCount =
-          await User.countDocuments({
-            role: "admin",
-            status: "approved",
-          });
-
-        if (adminCount <= 1) {
-          return res.status(400).json({
-            success: false,
-            message:
-              "At least one approved admin account must remain",
-          });
-        }
-      }
-
-      // =================================================
-      // EMAIL
-      // =================================================
-
-      if (email) {
-        const cleanEmail =
-          email.trim().toLowerCase();
-
-        const emailOwner =
-          await User.findOne({
-            email: cleanEmail,
-            _id: {
-              $ne: userId,
-            },
-          });
-
-        if (emailOwner) {
-          return res.status(400).json({
-            success: false,
-            message:
-              "Another user already has this email",
-          });
-        }
-
-        user.email =
-          cleanEmail;
-      }
-
-      // =================================================
-      // NAME
-      // =================================================
-
-      if (name) {
-        const cleanName =
-          name.trim();
-
-        if (
-          cleanName.length < 2
-        ) {
-          return res.status(400).json({
-            success: false,
-            message:
-              "Name must contain at least 2 characters",
-          });
-        }
-
-        user.name =
-          cleanName;
-      }
-
-      // =================================================
-      // PASSWORD
-      // =================================================
-
-      if (password) {
-        if (
-          password.length < 6
-        ) {
-          return res.status(400).json({
-            success: false,
-            message:
-              "Password must contain at least 6 characters",
-          });
-        }
-
-        user.password =
-          await bcrypt.hash(
-            password,
-            10
-          );
-      }
-
-      // =================================================
-      // ROLE
-      // =================================================
-
-      if (role) {
-        user.role = role;
-
-        // Admin explicitly changed the role,
-        // so the account is approved.
-        user.status = "approved";
-      }
-
-      await user.save();
-
-      return res.status(200).json({
-        success: true,
-        message:
-          "User updated successfully",
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          status: user.status,
-        },
-      });
-    } catch (error) {
-      console.error(
-        "UPDATE USER ERROR:",
-        error
-      );
-
-      return res.status(500).json({
-        success: false,
-        message: "Server error",
-      });
-    }
-  }
-);
-
-// =====================================================
-// DELETE USER
-// ADMIN ONLY
-// =====================================================
-
-router.delete(
-  "/users/:id",
-  authMiddleware,
-  requireRole("admin"),
-  async (req, res) => {
-    try {
-      const userId =
-        req.params.id;
-
-      if (
-        !mongoose.Types.ObjectId.isValid(
-          userId
-        )
-      ) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Invalid user ID",
-        });
-      }
-
-      // =================================================
-      // SELF DELETE PROTECTION
-      // =================================================
-
-      if (
-        userId === req.user.id
-      ) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "You cannot delete your own account",
-        });
-      }
-
-      const user =
-        await User.findById(
-          userId
-        );
-
-      if (!user) {
-        return res.status(404).json({
-          success: false,
-          message:
-            "User not found",
-        });
-      }
-
-      // =================================================
-      // LAST ADMIN PROTECTION
-      // =================================================
-
-      if (
-        user.role === "admin" &&
-        user.status === "approved"
-      ) {
-        const adminCount =
-          await User.countDocuments({
-            role: "admin",
-            status: "approved",
-          });
-
-        if (adminCount <= 1) {
-          return res.status(400).json({
-            success: false,
-            message:
-              "At least one approved admin account must remain",
-          });
-        }
-      }
-
-      await User.findByIdAndDelete(
-        userId
-      );
-
-      return res.status(200).json({
-        success: true,
-        message:
-          "User deleted successfully",
-      });
-    } catch (error) {
-      console.error(
-        "DELETE USER ERROR:",
-        error
-      );
-
-      return res.status(500).json({
-        success: false,
-        message: "Server error",
-      });
-    }
-  }
-);
+});
 
 module.exports = router;
