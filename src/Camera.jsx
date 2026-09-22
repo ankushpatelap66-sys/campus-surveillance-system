@@ -43,6 +43,10 @@ function CVRUModuleBrand(){
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
+if (!API_BASE) {
+  console.warn("VITE_API_URL is not configured.");
+}
+
 function Camera() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -119,10 +123,15 @@ function Camera() {
 
     // Prefer a clear English voice. Exact voice names vary by Windows/browser.
     const preferredNames = [
-      "Microsoft Zira Desktop",
+      // Prefer modern/natural voices when the browser exposes them.
       "Microsoft Aria Online (Natural) - English (United States)",
+      "Microsoft Jenny Online (Natural) - English (United States)",
+      "Microsoft Sonia Online (Natural) - English (United Kingdom)",
+      "Microsoft Libby Online (Natural) - English (United Kingdom)",
+      "Microsoft Ava Online (Natural) - English (United States)",
       "Google UK English Female",
       "Google US English",
+      "Microsoft Zira Desktop",
       "Samantha",
     ];
 
@@ -261,18 +270,25 @@ function Camera() {
     try {
       window.speechSynthesis.cancel();
 
+      // Short, clean announcement: do not speak the campus location.
       const utterance = new SpeechSynthesisUtterance(
-        "Welcome to Dr. C. V. Raman University, Vaishali, Bihar."
+        "Welcome to Dr. C. V. Raman University."
       );
 
+      // A slightly slower pace and a natural pitch make the announcement
+      // easier to understand and less robotic on supported browser voices.
       utterance.lang = "en-IN";
-      utterance.rate = 0.88;
-      utterance.pitch = 1.02;
-      utterance.volume = 1;
+      utterance.rate = 0.84;
+      utterance.pitch = 1.0;
+      utterance.volume = 0.95;
 
       const voice = chooseWelcomeVoice();
       if (voice) {
         utterance.voice = voice;
+        // Respect the selected voice's native language when available.
+        if (voice.lang) {
+          utterance.lang = voice.lang;
+        }
       }
 
       utterance.onstart = () => {
@@ -1034,6 +1050,15 @@ function Camera() {
           normalizedPlate
         );
 
+        const token =
+          localStorage.getItem("token");
+
+        if (!token) {
+          throw new Error(
+            "Login session expired. Please login again."
+          );
+        }
+
         const response =
           await fetch(
             `${API_BASE}/automation/vehicle-detected`,
@@ -1043,6 +1068,8 @@ function Camera() {
               headers: {
                 "Content-Type":
                   "application/json",
+                Authorization:
+                  `Bearer ${token}`,
               },
 
               body: JSON.stringify({
@@ -1055,8 +1082,20 @@ function Camera() {
             }
           );
 
+        const contentType =
+          response.headers.get(
+            "content-type"
+          ) || "";
+
         const data =
-          await response.json();
+          contentType.includes(
+            "application/json"
+          )
+            ? await response.json()
+            : {
+                success: false,
+                message: await response.text(),
+              };
 
         console.log(
           "BACKEND RESPONSE:",

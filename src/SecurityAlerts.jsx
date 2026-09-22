@@ -17,7 +17,12 @@ function SecurityAlerts() {
       else setRefreshing(true);
       setError("");
 
-      const response = await fetch(`${API_BASE}/automation/alerts`);
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("Login session expired. Please login again.");
+
+      const response = await fetch(`${API_BASE}/automation/alerts`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       const contentType = response.headers.get("content-type") || "";
       const data = contentType.includes("application/json")
         ? await response.json()
@@ -50,7 +55,10 @@ function SecurityAlerts() {
       setError("");
       const response = await fetch(`${API_BASE}/automation/alerts/${id}/resolve`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+        },
       });
 
       const contentType = response.headers.get("content-type") || "";
