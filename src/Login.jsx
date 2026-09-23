@@ -138,10 +138,42 @@ function Login({ onBack, onLogin }) {
 
       const data = await response.json();
 
-      if (!response.ok || !data.success) {
-        setError(data.message || "Registration failed");
-        return;
-      }
+     // =================================================
+// EXISTING UNVERIFIED ACCOUNT
+// -> OPEN OTP VERIFICATION PAGE
+// =================================================
+
+if (data.requiresEmailVerification === true) {
+  const cleanEmail = registerEmail.trim();
+
+  setVerificationEmail(cleanEmail);
+  setVerificationCode("");
+
+  setIsVerificationMode(true);
+  setIsRegisterMode(false);
+
+  setError("");
+
+  setMessage(
+    data.message ||
+      "This email is already registered but not verified. Please verify your email."
+  );
+
+  setLoginEmail(cleanEmail);
+  setLoginRole(registerRole);
+  setLoginPassword("");
+
+  return;
+}
+
+// =================================================
+// NORMAL REGISTRATION ERROR
+// =================================================
+
+if (!response.ok || !data.success) {
+  setError(data.message || "Registration failed");
+  return;
+}
 
       // =================================================
       // REGISTRATION SUCCESS -> EMAIL VERIFICATION
