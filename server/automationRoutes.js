@@ -12,383 +12,281 @@ const authMiddleware = require("./middleware/authMiddleware");
    SECURITY ALERT MODEL
 ===================================================== */
 
-const securityAlertSchema =
-  new mongoose.Schema(
-    {
-      type: {
-        type: String,
-        required: true,
-      },
-
-      vehicleNumber: {
-        type: String,
-        required: true,
-        uppercase: true,
-        trim: true,
-      },
-
-      location: {
-        type: String,
-        default: "Main Gate",
-      },
-
-      message: {
-        type: String,
-        required: true,
-      },
-
-      severity: {
-        type: String,
-        enum: [
-          "Low",
-          "Medium",
-          "High",
-        ],
-        default: "High",
-      },
-
-      status: {
-        type: String,
-        enum: [
-          "Active",
-          "Resolved",
-        ],
-        default: "Active",
-      },
-
-      detectedAt: {
-        type: Date,
-        default: Date.now,
-      },
+const securityAlertSchema = new mongoose.Schema(
+  {
+    type: {
+      type: String,
+      required: true,
     },
-    {
-      timestamps: true,
-    }
-  );
+
+    vehicleNumber: {
+      type: String,
+      required: true,
+      uppercase: true,
+      trim: true,
+    },
+
+    location: {
+      type: String,
+      default: "Main Gate",
+    },
+
+    message: {
+      type: String,
+      required: true,
+    },
+
+    severity: {
+      type: String,
+      enum: ["Low", "Medium", "High"],
+      default: "High",
+    },
+
+    status: {
+      type: String,
+      enum: ["Active", "Resolved"],
+      default: "Active",
+    },
+
+    detectedAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
 
 const SecurityAlert =
   mongoose.models.SecurityAlert ||
-  mongoose.model(
-    "SecurityAlert",
-    securityAlertSchema
-  );
+  mongoose.model("SecurityAlert", securityAlertSchema);
 
 /* =====================================================
    NORMALIZE VEHICLE NUMBER
 ===================================================== */
 
-const normalizeVehicleNumber =
-  (value) => {
-    return String(value || "")
-      .toUpperCase()
-      .replace(
-        /[^A-Z0-9]/g,
-        ""
-      );
-  };
+const normalizeVehicleNumber = (value) => {
+  return String(value || "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "");
+};
 
 /* =====================================================
    CREATE ENTRY DOCUMENT
 ===================================================== */
 
-const createEntryDocument =
-  (
-    vehicleNumber,
-    vehicle
-  ) => {
-    const schema =
-      EntryExit.schema;
+const createEntryDocument = (vehicleNumber, vehicle) => {
+  const schema = EntryExit.schema;
 
-    const document = {};
+  const document = {};
 
-    if (
-      schema.path(
-        "vehicleNumber"
-      )
-    ) {
-      document.vehicleNumber =
-        vehicleNumber;
-    }
+  if (schema.path("vehicleNumber")) {
+    document.vehicleNumber = vehicleNumber;
+  }
 
-    if (
-      schema.path("entryTime")
-    ) {
-      document.entryTime =
-        new Date();
-    }
+  if (schema.path("entryTime")) {
+    document.entryTime = new Date();
+  }
 
-    if (
-      schema.path("exitTime")
-    ) {
-      document.exitTime =
-        null;
-    }
+  if (schema.path("exitTime")) {
+    document.exitTime = null;
+  }
 
-    if (
-      schema.path("status")
-    ) {
-      document.status =
-        "Inside Campus";
-    }
+  if (schema.path("status")) {
+    document.status = "Inside Campus";
+  }
 
-    if (
-      schema.path("ownerName") &&
-      vehicle?.ownerName
-    ) {
-      document.ownerName =
-        vehicle.ownerName;
-    }
+  if (schema.path("ownerName") && vehicle?.ownerName) {
+    document.ownerName = vehicle.ownerName;
+  }
 
-    if (
-      schema.path("vehicleType") &&
-      vehicle?.vehicleType
-    ) {
-      document.vehicleType =
-        vehicle.vehicleType;
-    }
+  if (schema.path("vehicleType") && vehicle?.vehicleType) {
+    document.vehicleType = vehicle.vehicleType;
+  }
 
-    return document;
-  };
+  return document;
+};
 
 /* =====================================================
    FIND ACTIVE ENTRY
 ===================================================== */
 
-const findActiveEntry =
-  async (vehicleNumber) => {
-    const schema =
-      EntryExit.schema;
+const findActiveEntry = async (vehicleNumber) => {
+  const schema = EntryExit.schema;
 
-    /* ==========================================
-       PRIMARY CHECK:
-       status = Inside Campus
-    ========================================== */
+  /* ==========================================
+     PRIMARY CHECK:
+     status = Inside Campus
+  ========================================== */
 
-    if (
-      schema.path("status")
-    ) {
-      const insideEntry =
-        await EntryExit.findOne({
-          vehicleNumber,
-          status:
-            "Inside Campus",
-        }).sort({
-          entryTime: -1,
-        });
+  if (schema.path("status")) {
+    const insideEntry = await EntryExit.findOne({
+      vehicleNumber,
+      status: "Inside Campus",
+    }).sort({
+      entryTime: -1,
+    });
 
-      if (insideEntry) {
-        return insideEntry;
-      }
+    if (insideEntry) {
+      return insideEntry;
     }
+  }
 
-    /* ==========================================
-       SECONDARY CHECK:
-       exitTime is null
-    ========================================== */
+  /* ==========================================
+     SECONDARY CHECK:
+     exitTime is null
+  ========================================== */
 
-    if (
-      schema.path("exitTime")
-    ) {
-      return EntryExit.findOne({
-        vehicleNumber,
-        $or: [
-          {
-            exitTime: null,
+  if (schema.path("exitTime")) {
+    return EntryExit.findOne({
+      vehicleNumber,
+      $or: [
+        {
+          exitTime: null,
+        },
+        {
+          exitTime: {
+            $exists: false,
           },
-          {
-            exitTime: {
-              $exists: false,
-            },
-          },
-        ],
-      }).sort({
-        entryTime: -1,
-      });
-    }
+        },
+      ],
+    }).sort({
+      entryTime: -1,
+    });
+  }
 
-    return null;
-  };
+  return null;
+};
 
 /* =====================================================
    ASSIGN PARKING SLOT
 ===================================================== */
 
-const assignParkingSlot =
-  async (
+const assignParkingSlot = async (vehicleNumber, ownerName) => {
+  /* ==========================================
+     CHECK ALREADY OCCUPIED
+  ========================================== */
+
+  const existingParking = await Parking.findOne({
     vehicleNumber,
-    ownerName
-  ) => {
-    /* ==========================================
-       CHECK ALREADY OCCUPIED
-    ========================================== */
+    status: "Occupied",
+  });
 
-    const existingParking =
-      await Parking.findOne({
-        vehicleNumber,
-        status: "Occupied",
-      });
+  if (existingParking) {
+    return existingParking;
+  }
 
-    if (existingParking) {
-      return existingParking;
+  /* ==========================================
+     GET ALL PARKING RECORDS
+  ========================================== */
+
+  const parkingRecords = await Parking.find();
+
+  const occupiedSlots = new Set(
+    parkingRecords
+      .filter((item) => item.status === "Occupied")
+      .map((item) => item.slotNumber)
+  );
+
+  /* ==========================================
+     FIND FIRST AVAILABLE SLOT
+     P-01 to P-120
+  ========================================== */
+
+  let availableSlot = null;
+
+  for (let number = 1; number <= 120; number++) {
+    const slot = `P-${String(number).padStart(2, "0")}`;
+
+    if (!occupiedSlots.has(slot)) {
+      availableSlot = slot;
+      break;
     }
+  }
 
-    /* ==========================================
-       GET ALL PARKING RECORDS
-    ========================================== */
+  if (!availableSlot) {
+    return null;
+  }
 
-    const parkingRecords =
-      await Parking.find();
+  /* ==========================================
+     CHECK WHETHER SLOT RECORD EXISTS
+  ========================================== */
 
-    const occupiedSlots =
-      new Set(
-        parkingRecords
-          .filter(
-            (item) =>
-              item.status ===
-              "Occupied"
-          )
-          .map(
-            (item) =>
-              item.slotNumber
-          )
-      );
+  const existingSlot = await Parking.findOne({
+    slotNumber: availableSlot,
+  });
 
-    /* ==========================================
-       FIND FIRST AVAILABLE SLOT
-       P-01 to P-120
-    ========================================== */
+  /* ==========================================
+     REUSE AVAILABLE RECORD
+  ========================================== */
 
-    let availableSlot =
-      null;
+  if (existingSlot) {
+    existingSlot.vehicleNumber = vehicleNumber;
 
-    for (
-      let number = 1;
-      number <= 120;
-      number++
-    ) {
-      const slot =
-        `P-${String(
-          number
-        ).padStart(2, "0")}`;
+    existingSlot.ownerName = ownerName || "Unknown";
 
-      if (
-        !occupiedSlots.has(
-          slot
-        )
-      ) {
-        availableSlot =
-          slot;
+    existingSlot.parkingTime = new Date();
 
-        break;
-      }
-    }
+    existingSlot.exitTime = null;
 
-    if (!availableSlot) {
-      return null;
-    }
+    existingSlot.status = "Occupied";
 
-    /* ==========================================
-       CHECK WHETHER SLOT RECORD EXISTS
-    ========================================== */
+    await existingSlot.save();
 
-    const existingSlot =
-      await Parking.findOne({
-        slotNumber:
-          availableSlot,
-      });
+    return existingSlot;
+  }
 
-    /* ==========================================
-       REUSE AVAILABLE RECORD
-    ========================================== */
+  /* ==========================================
+     CREATE NEW PARKING RECORD
+  ========================================== */
 
-    if (existingSlot) {
-      existingSlot.vehicleNumber =
-        vehicleNumber;
+  return Parking.create({
+    slotNumber: availableSlot,
 
-      existingSlot.ownerName =
-        ownerName ||
-        "Unknown";
+    vehicleNumber: vehicleNumber,
 
-      existingSlot.parkingTime =
-        new Date();
+    ownerName: ownerName || "Unknown",
 
-      existingSlot.exitTime =
-        null;
+    parkingTime: new Date(),
 
-      existingSlot.status =
-        "Occupied";
+    exitTime: null,
 
-      await existingSlot.save();
-
-      return existingSlot;
-    }
-
-    /* ==========================================
-       CREATE NEW PARKING RECORD
-    ========================================== */
-
-    return Parking.create({
-      slotNumber:
-        availableSlot,
-
-      vehicleNumber:
-        vehicleNumber,
-
-      ownerName:
-        ownerName ||
-        "Unknown",
-
-      parkingTime:
-        new Date(),
-
-      exitTime:
-        null,
-
-      status:
-        "Occupied",
-    });
-  };
+    status: "Occupied",
+  });
+};
 
 /* =====================================================
    RELEASE PARKING SLOT
 ===================================================== */
 
-const releaseParkingSlot =
-  async (
-    vehicleNumber
-  ) => {
-    const parkingRecords =
-      await Parking.find({
-        vehicleNumber,
-        status: "Occupied",
-      });
+const releaseParkingSlot = async (vehicleNumber) => {
+  const parkingRecords = await Parking.find({
+    vehicleNumber,
+    status: "Occupied",
+  });
 
-    for (
-      const parking of
-        parkingRecords
-    ) {
-      parking.status =
-        "Available";
+  for (const parking of parkingRecords) {
+    parking.status = "Available";
 
-      parking.exitTime =
-        new Date();
+    parking.exitTime = new Date();
 
-      await parking.save();
+    await parking.save();
 
-      console.log(
-        "PARKING RELEASED:",
-        parking.slotNumber,
-        parking.vehicleNumber
-      );
+    console.log(
+      "PARKING RELEASED:",
+      parking.slotNumber,
+      parking.vehicleNumber
+    );
 
-      console.log(
-        "PARKING EXIT TIME:",
-        parking.exitTime
-      );
-    }
+    console.log(
+      "PARKING EXIT TIME:",
+      parking.exitTime
+    );
+  }
 
-    return parkingRecords;
-  };
+  return parkingRecords;
+};
 
 /* =====================================================
    DASHBOARD SUMMARY
@@ -400,6 +298,7 @@ router.get(
   async (req, res) => {
     try {
       const now = new Date();
+
       const startOfToday = new Date(now);
       startOfToday.setHours(0, 0, 0, 0);
 
@@ -421,41 +320,113 @@ router.get(
         todayAlerts,
         yesterdayAlerts,
       ] = await Promise.all([
+        /* ==========================================
+           TOTAL REGISTERED VEHICLES
+        ========================================== */
+
         Vehicle.countDocuments(),
+
+        /* ==========================================
+           VEHICLES CURRENTLY INSIDE
+        ========================================== */
+
         EntryExit.countDocuments({
           status: "Inside Campus",
         }),
+
+        /* ==========================================
+           OCCUPIED PARKING
+        ========================================== */
+
         Parking.countDocuments({
           status: "Occupied",
         }),
+
+        /* ==========================================
+           ACTIVE SECURITY ALERTS
+        ========================================== */
+
         SecurityAlert.countDocuments({
           status: "Active",
         }),
+
+        /* ==========================================
+           RECENT ENTRY / EXIT ACTIVITY
+           
+           IMPORTANT:
+           No today-only filter here.
+           Dashboard Recent Activity should show
+           latest records across dates.
+        ========================================== */
+
         EntryExit.find()
           .sort({ createdAt: -1 })
-          .limit(10)
-          .lean(),
+          .limit(10),
+
+        /* ==========================================
+           RECENT PARKING ACTIVITY
+
+           IMPORTANT:
+           No today-only filter here.
+           Shows latest parking activity.
+        ========================================== */
+
         Parking.find()
-          .sort({ updatedAt: -1, createdAt: -1 })
-          .limit(10)
-          .lean(),
+          .sort({
+            updatedAt: -1,
+            createdAt: -1,
+          })
+          .limit(10),
+
+        /* ==========================================
+           RECENT SECURITY ALERTS
+        ========================================== */
+
         SecurityAlert.find()
-          .sort({ detectedAt: -1, createdAt: -1 })
-          .limit(10)
-          .lean(),
+          .sort({
+            detectedAt: -1,
+            createdAt: -1,
+          })
+          .limit(10),
+
+        /* ==========================================
+           TODAY'S ENTRIES
+        ========================================== */
+
         EntryExit.countDocuments({
-          entryTime: { $gte: startOfToday },
-          status: { $in: ["Inside Campus", "Exited"] },
+          entryTime: {
+            $gte: startOfToday,
+          },
+          status: {
+            $in: ["Inside Campus", "Exited"],
+          },
         }),
+
+        /* ==========================================
+           YESTERDAY'S ENTRIES
+        ========================================== */
+
         EntryExit.countDocuments({
           entryTime: {
             $gte: startOfYesterday,
             $lt: startOfToday,
           },
         }),
+
+        /* ==========================================
+           TODAY'S ALERTS
+        ========================================== */
+
         SecurityAlert.countDocuments({
-          createdAt: { $gte: startOfToday },
+          createdAt: {
+            $gte: startOfToday,
+          },
         }),
+
+        /* ==========================================
+           YESTERDAY'S ALERTS
+        ========================================== */
+
         SecurityAlert.countDocuments({
           createdAt: {
             $gte: startOfYesterday,
@@ -464,58 +435,132 @@ router.get(
         }),
       ]);
 
+      /* ==========================================
+         FORMAT ACTIVITY
+      ========================================== */
+
       const formatActivity = (item) => {
         const isEntryExit = Boolean(item.entryTime);
         const isParking = Boolean(item.parkingTime);
         const isAlert = Boolean(item.detectedAt);
 
+        /* ========================================
+           SECURITY ALERT
+        ======================================== */
+
         if (isAlert) {
           return {
             id: `alert-${item._id}`,
-            time: item.detectedAt || item.createdAt,
-            vehicleNumber: item.vehicleNumber || "Unknown",
-            event: item.type || "Security Alert",
-            location: item.location || "Main Gate",
+
+            time:
+              item.detectedAt ||
+              item.createdAt,
+
+            vehicleNumber:
+              item.vehicleNumber ||
+              "Unknown",
+
+            event:
+              item.type ||
+              "Security Alert",
+
+            location:
+              item.location ||
+              "Main Gate",
+
             status: "ALERT",
+
             tone: "danger",
+
             icon: "alert",
           };
         }
 
+        /* ========================================
+           PARKING
+        ======================================== */
+
         if (isParking) {
           return {
             id: `parking-${item._id}`,
-            time: item.parkingTime || item.updatedAt || item.createdAt,
-            vehicleNumber: item.vehicleNumber || "-",
+
+            time:
+              item.parkingTime ||
+              item.updatedAt ||
+              item.createdAt,
+
+            vehicleNumber:
+              item.vehicleNumber ||
+              "-",
+
             event:
               item.status === "Available"
                 ? "Parking Released"
                 : "Parking Assigned",
-            location: item.slotNumber || "Parking Area",
-            status: item.status === "Available" ? "FREE" : "PARKED",
+
+            location:
+              item.slotNumber ||
+              "Parking Area",
+
+            status:
+              item.status === "Available"
+                ? "FREE"
+                : "PARKED",
+
             tone: "purple",
+
             icon: "parking",
           };
         }
 
+        /* ========================================
+           ENTRY / EXIT
+        ======================================== */
+
         if (isEntryExit) {
-          const isExit = item.status === "Exited";
+          const isExit =
+            item.status === "Exited";
+
           return {
             id: `entry-${item._id}`,
+
             time: isExit
-              ? item.exitTime || item.updatedAt || item.createdAt
-              : item.entryTime || item.createdAt,
-            vehicleNumber: item.vehicleNumber || "-",
-            event: isExit ? "Exit Recorded" : "Entry Recorded",
+              ? item.exitTime ||
+                item.updatedAt ||
+                item.createdAt
+              : item.entryTime ||
+                item.createdAt,
+
+            vehicleNumber:
+              item.vehicleNumber ||
+              "-",
+
+            event: isExit
+              ? "Exit Recorded"
+              : "Entry Recorded",
+
             location: "Main Gate",
-            status: isExit ? "OUT" : "IN",
-            tone: isExit ? "info" : "success",
-            icon: isExit ? "logout" : "entry",
+
+            status: isExit
+              ? "OUT"
+              : "IN",
+
+            tone: isExit
+              ? "info"
+              : "success",
+
+            icon: isExit
+              ? "logout"
+              : "entry",
           };
         }
 
         return null;
       };
+
+      /* ==========================================
+         COMBINE RECENT ACTIVITY
+      ========================================== */
 
       const activity = [
         ...recentEntries,
@@ -524,62 +569,138 @@ router.get(
       ]
         .map(formatActivity)
         .filter(Boolean)
-        .sort((a, b) => new Date(b.time) - new Date(a.time))
+        .sort(
+          (a, b) =>
+            new Date(b.time) -
+            new Date(a.time)
+        )
         .slice(0, 5);
 
-      const alerts = recentAlerts.slice(0, 3).map((alert) => ({
-        id: alert._id,
-        priority: `${alert.severity || "Medium"} Priority`,
-        type: alert.type || "Security Alert",
-        vehicleNumber: alert.vehicleNumber || "Unknown Vehicle",
-        location: alert.location || "Main Gate",
-        time: alert.detectedAt || alert.createdAt,
-        severity: String(alert.severity || "Medium").toLowerCase(),
-        status: alert.status || "Active",
-      }));
+      /* ==========================================
+         RECENT ALERTS
+      ========================================== */
 
-      const percentageChange = (current, previous) => {
+      const alerts = recentAlerts
+        .slice(0, 3)
+        .map((alert) => ({
+          id: alert._id,
+
+          priority:
+            `${alert.severity || "Medium"} Priority`,
+
+          type:
+            alert.type ||
+            "Security Alert",
+
+          vehicleNumber:
+            alert.vehicleNumber ||
+            "Unknown Vehicle",
+
+          location:
+            alert.location ||
+            "Main Gate",
+
+          time:
+            alert.detectedAt ||
+            alert.createdAt,
+
+          severity:
+            String(
+              alert.severity ||
+                "Medium"
+            ).toLowerCase(),
+
+          status:
+            alert.status ||
+            "Active",
+        }));
+
+      /* ==========================================
+         PERCENTAGE CHANGE
+      ========================================== */
+
+      const percentageChange = (
+        current,
+        previous
+      ) => {
         if (!previous) {
-          return current > 0 ? 100 : 0;
+          return current > 0
+            ? 100
+            : 0;
         }
-        return Math.round(((current - previous) / previous) * 100);
+
+        return Math.round(
+          ((current - previous) /
+            previous) *
+            100
+        );
       };
+
+      /* ==========================================
+         DASHBOARD RESPONSE
+      ========================================== */
 
       res.json({
         success: true,
+
         summary: {
           totalVehicles,
+
           insideCampus,
-          parkingOccupied: occupiedParking,
+
+          parkingOccupied:
+            occupiedParking,
+
           parkingCapacity: 120,
+
           activeAlerts,
+
           changes: {
-            entriesToday: percentageChange(
-              todayEntries,
-              yesterdayEntries
-            ),
-            alertsToday: percentageChange(
-              todayAlerts,
-              yesterdayAlerts
-            ),
+            entriesToday:
+              percentageChange(
+                todayEntries,
+                yesterdayEntries
+              ),
+
+            alertsToday:
+              percentageChange(
+                todayAlerts,
+                yesterdayAlerts
+              ),
           },
         },
+
         activity,
+
         alerts,
-        lastDetection: activity.find(
-          (item) => item.vehicleNumber && item.vehicleNumber !== "-"
-        ) || null,
+
+        lastDetection:
+          activity.find(
+            (item) =>
+              item.vehicleNumber &&
+              item.vehicleNumber !== "-"
+          ) || null,
+
         camera: {
           status: "Online",
+
           ocrStatus: "Ready",
+
           name: "Main Gate",
         },
       });
     } catch (error) {
-      console.error("DASHBOARD SUMMARY ERROR:", error);
+      console.error(
+        "DASHBOARD SUMMARY ERROR:",
+        error
+      );
+
       res.status(500).json({
         success: false,
-        message: "Failed to load dashboard data.",
+
+        message:
+          "Failed to load dashboard data.",
+
         error: error.message,
       });
     }
@@ -673,12 +794,12 @@ router.post(
         const recentAlert =
           await SecurityAlert.findOne({
             vehicleNumber,
+
             status: "Active",
 
             createdAt: {
               $gte: new Date(
-                Date.now() -
-                  30000
+                Date.now() - 30000
               ),
             },
           });
@@ -698,9 +819,11 @@ router.post(
             message:
               "Vehicle is not registered in campus records.",
 
-            severity: "High",
+            severity:
+              "High",
 
-            status: "Active",
+            status:
+              "Active",
 
             detectedAt:
               new Date(),
@@ -806,7 +929,8 @@ router.post(
 
           authorized: true,
 
-          action: "EXIT",
+          action:
+            "EXIT",
 
           vehicleNumber,
 
@@ -823,8 +947,7 @@ router.post(
             releasedParking.length,
 
           message:
-            releasedParking.length >
-            0
+            releasedParking.length > 0
               ? "Vehicle exit recorded automatically and parking slot released."
               : "Vehicle exit recorded automatically.",
         });
@@ -897,7 +1020,8 @@ router.post(
 
         authorized: true,
 
-        action: "ENTRY",
+        action:
+          "ENTRY",
 
         vehicleNumber,
 

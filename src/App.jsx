@@ -52,7 +52,7 @@ const NAV_ITEMS = [
     id: "reports",
     label: "Reports",
     icon: "▥",
-    roles: ["admin"],
+    roles: ["admin","security"],
   },
   {
     id: "user-management",
@@ -131,7 +131,9 @@ function App() {
         ) : null;
 
       case "reports":
-        return user.role === "admin" ? <Reports /> : null;
+  return ["admin", "security"].includes(user.role) ? (
+    <Reports />
+  ) : null;
 
       case "user-management":
         return user.role === "admin" ? <UserManagement /> : null;

@@ -15,12 +15,25 @@ router.get("/test", (req, res) => {
 });
 
 // =====================================
-// GET ALL ENTRY / EXIT RECORDS
+// GET TODAY'S ENTRY / EXIT RECORDS
 // =====================================
 
 router.get("/", async (req, res) => {
   try {
-    const records = await EntryExit.find().sort({
+    // Aaj ke din ka start
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    // Kal ke din ka start
+    const endOfDay = new Date(startOfDay);
+    endOfDay.setDate(endOfDay.getDate() + 1);
+
+    const records = await EntryExit.find({
+      createdAt: {
+        $gte: startOfDay,
+        $lt: endOfDay,
+      },
+    }).sort({
       createdAt: -1,
     });
 
@@ -29,11 +42,11 @@ router.get("/", async (req, res) => {
       records,
     });
   } catch (error) {
-    console.error("GET ENTRY/EXIT ERROR:", error);
+    console.error("GET TODAY ENTRY/EXIT ERROR:", error);
 
     res.status(500).json({
       success: false,
-      message: "Failed to fetch entry/exit records",
+      message: "Failed to fetch today's entry/exit records",
       error: error.message,
     });
   }
