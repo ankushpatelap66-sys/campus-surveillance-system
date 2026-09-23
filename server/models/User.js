@@ -2,6 +2,10 @@ const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema(
   {
+    /* =====================================================
+       BASIC USER INFORMATION
+    ===================================================== */
+
     name: {
       type: String,
       required: true,
@@ -21,17 +25,33 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
 
+    /* =====================================================
+       USER ROLE
+    ===================================================== */
+
     role: {
       type: String,
       enum: ["admin", "security", "staff", "student"],
       default: "student",
     },
 
+    /* =====================================================
+       ACCOUNT STATUS
+       
+       pending  = waiting for approval
+       approved = can login
+       rejected = rejected by Admin
+    ===================================================== */
+
     status: {
       type: String,
       enum: ["pending", "approved", "rejected"],
       default: "pending",
     },
+
+    /* =====================================================
+       EMAIL VERIFICATION
+    ===================================================== */
 
     emailVerified: {
       type: Boolean,
@@ -43,22 +63,20 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
 
-    /*
-     * OTP automatically expires after this date.
-     * MongoDB TTL index will automatically remove
-     * unverified accounts after expiry.
-     */
     emailVerificationExpires: {
       type: Date,
       default: null,
-      index: {
-        expireAfterSeconds: 0,
-      },
     },
 
-    /*
-     * Resend protection
-     */
+    /* =====================================================
+       OTP RESEND CONTROL
+       
+       These fields are used for:
+       - 60 second resend cooldown
+       - maximum 5 resends per 24 hours
+       - tracking the current resend window
+    ===================================================== */
+
     emailVerificationLastSentAt: {
       type: Date,
       default: null,
@@ -74,6 +92,7 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
   },
+
   {
     timestamps: true,
   }

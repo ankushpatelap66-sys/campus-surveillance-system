@@ -1048,3 +1048,919 @@ img { max-width: 100%; display: block; }
   margin-bottom: 8px !important;
   line-height: 20px !important;
 }
+/* =========================================================
+   FINAL MOBILE RESPONSIVE FIX
+   Keeps desktop design unchanged
+========================================================= */
+
+@media (max-width: 800px) {
+
+  /* ---------- GLOBAL MOBILE ---------- */
+  html,
+  body,
+  #root {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  body {
+    font-size: 14px;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    max-width: 100%;
+  }
+
+  /* ---------- DASHBOARD HEADER ---------- */
+
+  .dashboard-header {
+    width: 100%;
+    height: 64px !important;
+    min-height: 64px;
+    grid-template-columns: 1fr auto !important;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .university-header-brand {
+    min-width: 0;
+    width: 100%;
+    height: 64px;
+    padding: 6px 10px 6px 58px !important;
+    gap: 9px;
+  }
+
+  .header-cvru-logo {
+    width: 46px !important;
+    height: 46px !important;
+    flex: 0 0 46px !important;
+  }
+
+  .university-name {
+    display: block !important;
+    min-width: 0;
+    border-right: 0;
+    padding-right: 0;
+  }
+
+  .university-name strong {
+    font-size: 12px !important;
+    line-height: 1.15;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 185px;
+  }
+
+  .university-name span {
+    font-size: 7px !important;
+    letter-spacing: .7px;
+    white-space: nowrap;
+  }
+
+  .header-project-brand {
+    display: none !important;
+  }
+
+  .header-actions {
+    height: 64px;
+    min-width: auto;
+    padding: 0 9px 0 4px !important;
+    gap: 6px !important;
+  }
+
+  .header-online,
+  .header-separator,
+  .header-logout,
+  .header-user div {
+    display: none !important;
+  }
+
+  .header-action {
+    display: none !important;
+  }
+
+  .header-user {
+    display: flex !important;
+    gap: 0;
+  }
+
+  .header-avatar {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 12px;
+  }
+
+  /* ---------- MOBILE MENU BUTTON ---------- */
+
+  .mobile-menu-button {
+    display: grid !important;
+    place-items: center;
+    position: fixed !important;
+    left: 10px !important;
+    top: 14px !important;
+    width: 37px !important;
+    height: 37px !important;
+    border-radius: 8px !important;
+    z-index: 120 !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,.18);
+  }
+
+  /* ---------- SIDEBAR ---------- */
+
+  .dashboard-sidebar {
+    width: 270px !important;
+    flex: 0 0 270px !important;
+    position: fixed !important;
+    top: 64px !important;
+    left: -285px !important;
+    height: calc(100vh - 64px) !important;
+    min-height: calc(100vh - 64px) !important;
+    overflow-y: auto;
+    overflow-x: hidden;
+    z-index: 110 !important;
+    transition: left .25s ease;
+  }
+
+  .dashboard-sidebar.is-open {
+    left: 0 !important;
+  }
+
+  .sidebar-nav {
+    padding: 14px 10px 0 !important;
+  }
+
+  .sidebar-link {
+    height: 46px;
+    font-size: 12px;
+    padding-left: 15px;
+  }
+
+  .sidebar-icon {
+    font-size: 18px;
+  }
+
+  .mobile-sidebar-overlay {
+    top: 64px !important;
+    z-index: 105 !important;
+  }
+
+  /* ---------- MAIN BODY ---------- */
+
+  .dashboard-body {
+    width: 100%;
+    min-width: 0;
+    display: block;
+  }
+
+  .dashboard-main {
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .dashboard-content {
+    width: 100%;
+    padding: 0 12px 18px !important;
+  }
+
+  /* ---------- HERO ---------- */
+
+  .dashboard-hero {
+    width: calc(100% + 24px);
+    margin-left: -12px !important;
+    margin-right: -12px !important;
+    height: 300px !important;
+    min-height: 300px;
+    background-position: center center;
+  }
+
+  .dashboard-hero-overlay {
+    background:
+      linear-gradient(
+        90deg,
+        rgba(5,34,69,.92) 0%,
+        rgba(5,42,80,.70) 55%,
+        rgba(5,42,80,.22) 100%
+      );
+  }
+
+  .dashboard-hero-content {
+    padding: 32px 22px !important;
+  }
+
+  .hero-kicker {
+    font-size: 9px;
+  }
+
+  .dashboard-hero h1 {
+    max-width: 100%;
+    font-size: 28px !important;
+    line-height: 1.15;
+    margin-top: 9px;
+  }
+
+  .dashboard-hero p {
+    max-width: 100%;
+    font-size: 11px !important;
+    line-height: 1.55;
+  }
+
+  .hero-location {
+    margin-top: 15px;
+    font-size: 10px;
+  }
+
+  /* ---------- DASHBOARD STATS ---------- */
+
+  .dashboard-stats,
+  .dashboard-left-column .dashboard-stats {
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 9px !important;
+    margin-bottom: 15px;
+  }
+
+  .stat-card {
+    min-height: 125px !important;
+    padding: 13px 11px 10px !important;
+    border-radius: 9px;
+  }
+
+  .stat-main {
+    gap: 9px;
+  }
+
+  .stat-icon {
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+    font-size: 18px;
+  }
+
+  .stat-main h3 {
+    font-size: 9px;
+    margin-top: 2px;
+  }
+
+  .stat-main strong {
+    font-size: 19px;
+  }
+
+  .stat-main span {
+    font-size: 8px;
+  }
+
+  .stat-bottom {
+    margin-top: 10px;
+  }
+
+  .stat-bottom > b {
+    font-size: 8px;
+  }
+
+  .stat-sparkline {
+    width: 70px;
+    height: 20px;
+    gap: 2px;
+  }
+
+  .stat-sparkline span {
+    width: 8px;
+  }
+
+  /* ---------- DASHBOARD LAYOUT ---------- */
+
+  .dashboard-layout {
+    width: 100%;
+    display: block !important;
+  }
+
+  .dashboard-left-column {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .dashboard-lower-grid {
+    width: 100%;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .dashboard-side-column {
+    width: 100%;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    margin-top: 12px;
+  }
+
+  /* ---------- PANELS ---------- */
+
+  .dashboard-panel,
+  .admin-card,
+  .live-camera-card {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 9px;
+  }
+
+  .panel-title {
+    min-height: 48px;
+    padding: 0 12px;
+  }
+
+  .panel-title h2 {
+    font-size: 13px;
+  }
+
+  /* ---------- ACTIVITY TABLE ---------- */
+
+  .activity-table {
+    width: 100%;
+    overflow-x: auto;
+    padding: 0 8px 6px;
+  }
+
+  .activity-row {
+    min-width: 510px;
+    grid-template-columns: 85px 100px 1fr 80px 55px !important;
+    gap: 7px;
+    font-size: 9px;
+  }
+
+  .activity-heading {
+    min-height: 36px;
+  }
+
+  /* ---------- ALERTS ---------- */
+
+  .alert-list {
+    padding: 0 9px;
+  }
+
+  .alert-row {
+    grid-template-columns: 68px minmax(0, 1fr) 10px;
+    gap: 9px;
+    min-height: 80px;
+  }
+
+  .alert-thumb {
+    width: 68px;
+    height: 57px;
+  }
+
+  .alert-info strong {
+    font-size: 10px;
+  }
+
+  .alert-info > span:not(.alert-priority),
+  .alert-info small {
+    font-size: 8px;
+  }
+
+  /* ---------- ADMIN CARD ---------- */
+
+  .admin-card-head {
+    padding: 12px;
+  }
+
+  .admin-shield {
+    width: 42px;
+    height: 42px;
+    font-size: 20px;
+  }
+
+  .admin-card-head h2 {
+    font-size: 13px;
+  }
+
+  .admin-card-head p {
+    font-size: 8px;
+  }
+
+  /* ---------- LIVE CAMERA ---------- */
+
+  .camera-preview {
+    height: 190px !important;
+  }
+
+  /* ---------- FOOTER ---------- */
+
+  .dashboard-footer {
+    width: 100%;
+    min-height: auto;
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+    padding: 20px 15px !important;
+    text-align: center;
+  }
+
+  .footer-divider {
+    display: none;
+  }
+
+  .footer-motto {
+    text-align: center !important;
+  }
+
+  /* ---------- MODULE PAGES ---------- */
+
+  .module-heading {
+    min-height: auto;
+    padding: 24px 2px 18px !important;
+    align-items: flex-start !important;
+    flex-direction: column !important;
+    gap: 14px;
+  }
+
+  .module-heading h1 {
+    font-size: 25px !important;
+    line-height: 1.2;
+  }
+
+  .module-page-content {
+    width: 100%;
+    min-height: 300px;
+  }
+
+  /* ---------- CAMERA MONITORING ---------- */
+
+  .camera-page {
+    width: 100%;
+    min-width: 0;
+    padding: 20px 12px 28px !important;
+    overflow-x: hidden;
+  }
+
+  .camera-page .camera-header {
+    width: 100%;
+    margin-bottom: 18px !important;
+  }
+
+  .camera-page .camera-header h1 {
+    font-size: 22px !important;
+  }
+
+  .camera-page .camera-header p {
+    font-size: 10px !important;
+    line-height: 1.5;
+  }
+
+  .camera-page .camera-stats {
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 9px !important;
+  }
+
+  .camera-page .camera-stat-card {
+    min-height: 72px;
+    padding: 11px !important;
+  }
+
+  .camera-page .camera-stat-icon {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .camera-page .camera-stat-card h2 {
+    font-size: 19px !important;
+  }
+
+  .camera-page .camera-stat-card p {
+    font-size: 8px !important;
+  }
+
+  .camera-page .camera-grid {
+    width: 100%;
+    grid-template-columns: 1fr !important;
+  }
+
+  .camera-page .camera-card .camera-preview {
+    height: 230px !important;
+  }
+
+  /* ---------- SECURITY ALERT FILTERS ---------- */
+
+  .alerts-filters {
+    width: 100%;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 8px;
+  }
+
+  .alerts-filters input,
+  .alerts-filters select {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .alerts-result-count {
+    margin-top: 8px;
+  }
+
+  /* ---------- USER MANAGEMENT ---------- */
+
+  .user-management-page {
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  .user-management-hero {
+    width: 100%;
+    padding: 22px 3px 18px !important;
+    align-items: flex-start !important;
+    flex-direction: column !important;
+  }
+
+  .user-management-hero h1 {
+    font-size: 25px !important;
+  }
+
+  .user-management-actions {
+    width: 100%;
+  }
+
+  .user-management-actions button {
+    flex: 1;
+    min-height: 40px;
+  }
+
+  .user-stats-grid {
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 9px !important;
+  }
+
+  .user-stat-card {
+    min-height: 80px;
+    padding: 11px;
+  }
+
+  .user-stat-card strong {
+    font-size: 20px;
+  }
+
+  .user-form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .user-toolbar {
+    width: 100%;
+    padding: 12px !important;
+    align-items: stretch !important;
+  }
+
+  .user-filters {
+    width: 100%;
+    min-width: 0 !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  .user-table-card {
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .responsive-table {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .responsive-table table {
+    min-width: 760px;
+  }
+
+  /* ---------- PUBLIC LANDING PAGE ---------- */
+
+  .public-site {
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  .public-navbar {
+    min-height: 64px;
+    padding: 8px 13px !important;
+  }
+
+  .public-brand {
+    min-width: 0;
+    gap: 8px;
+  }
+
+  .public-brand > img {
+    width: 43px;
+    height: 43px;
+  }
+
+  .public-brand > div:nth-child(2) strong {
+    font-size: 12px;
+  }
+
+  .public-brand > div:nth-child(2) span {
+    font-size: 7px;
+  }
+
+  .public-links {
+    gap: 6px !important;
+  }
+
+  .public-links a {
+    display: none;
+  }
+
+  .public-links button {
+    padding: 9px 12px;
+    font-size: 10px;
+  }
+
+  .public-hero {
+    min-height: 560px;
+    background-position: center;
+  }
+
+  .public-hero-overlay {
+    background:
+      linear-gradient(
+        90deg,
+        rgba(4,31,62,.94),
+        rgba(4,40,78,.72)
+      );
+  }
+
+  .public-hero-content {
+    padding: 78px 22px !important;
+    max-width: 100%;
+  }
+
+  .public-hero h1 {
+    font-size: 35px !important;
+    line-height: 1.12;
+  }
+
+  .public-description {
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .public-hero-content > div {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .public-hero-content button {
+    width: 100%;
+  }
+
+  .public-features {
+    padding: 48px 16px !important;
+  }
+
+  .public-features h2 {
+    font-size: 25px;
+  }
+
+  .public-feature-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+
+  .public-feature-grid article {
+    padding: 20px;
+  }
+
+  .public-about {
+    grid-template-columns: 1fr !important;
+    gap: 28px;
+    padding: 45px 18px !important;
+  }
+
+  .public-about h2 {
+    font-size: 26px;
+  }
+
+  .public-stats {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+
+  .public-stats div {
+    padding: 18px 5px;
+  }
+
+  .public-stats strong {
+    font-size: 20px;
+  }
+
+  .public-stats span {
+    font-size: 8px;
+  }
+}
+
+
+/* =========================================================
+   SMALL PHONES
+========================================================= */
+
+@media (max-width: 480px) {
+
+  .university-name strong {
+    max-width: 155px;
+    font-size: 11px !important;
+  }
+
+  .university-name span {
+    font-size: 6.5px !important;
+  }
+
+  .dashboard-content {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+
+  .dashboard-hero {
+    width: calc(100% + 20px);
+    margin-left: -10px !important;
+    margin-right: -10px !important;
+    height: 310px !important;
+  }
+
+  .dashboard-hero-content {
+    padding: 27px 18px !important;
+  }
+
+  .dashboard-hero h1 {
+    font-size: 25px !important;
+  }
+
+  .dashboard-hero p {
+    font-size: 10px !important;
+  }
+
+  .dashboard-stats,
+  .dashboard-left-column .dashboard-stats {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 7px !important;
+  }
+
+  .stat-card {
+    min-height: 118px !important;
+    padding: 11px 9px !important;
+  }
+
+  .stat-main {
+    gap: 7px;
+  }
+
+  .stat-icon {
+    width: 35px;
+    height: 35px;
+    flex-basis: 35px;
+    font-size: 16px;
+  }
+
+  .stat-main h3 {
+    font-size: 8px;
+  }
+
+  .stat-main strong {
+    font-size: 17px;
+  }
+
+  .stat-main span {
+    font-size: 7px;
+  }
+
+  .stat-sparkline {
+    display: none;
+  }
+
+  .camera-page .camera-stats {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .camera-page .camera-stat-card {
+    padding: 9px !important;
+  }
+
+  .camera-page .camera-stat-card h2 {
+    font-size: 17px !important;
+  }
+
+  .user-stats-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .public-hero {
+    min-height: 520px;
+  }
+
+  .public-hero-content {
+    padding: 65px 18px !important;
+  }
+
+  .public-hero h1 {
+    font-size: 31px !important;
+  }
+
+  .public-features h2 {
+    font-size: 23px;
+  }
+
+  .public-stats {
+    grid-template-columns: 1fr !important;
+    gap: 8px;
+  }
+}
+
+
+/* =========================================================
+   VERY SMALL PHONES
+========================================================= */
+
+@media (max-width: 360px) {
+
+  .university-header-brand {
+    padding-left: 54px !important;
+  }
+
+  .header-cvru-logo {
+    width: 42px !important;
+    height: 42px !important;
+    flex-basis: 42px !important;
+  }
+
+  .university-name strong {
+    max-width: 130px;
+    font-size: 10px !important;
+  }
+
+  .dashboard-hero h1 {
+    font-size: 23px !important;
+  }
+
+  .dashboard-stats,
+  .dashboard-left-column .dashboard-stats {
+    grid-template-columns: 1fr !important;
+  }
+
+  .stat-card {
+    min-height: 105px !important;
+  }
+
+  .camera-page .camera-stats {
+    grid-template-columns: 1fr !important;
+  }
+
+  .public-hero h1 {
+    font-size: 28px !important;
+  }
+}
+
+
+/* =========================================================
+   MOBILE TOUCH / INTERACTION
+========================================================= */
+
+@media (max-width: 800px) {
+
+  .sidebar-link,
+  button,
+  .action-btn,
+  .quick-links button {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .sidebar-link {
+    min-height: 46px;
+  }
+
+  .action-btn {
+    min-height: 34px;
+  }
+
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  /* Prevent accidental horizontal page movement */
+  .dashboard-app,
+  .dashboard-body,
+  .dashboard-main,
+  .dashboard-content,
+  .module-page-content,
+  .camera-page,
+  .user-management-page,
+  .public-site {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+}

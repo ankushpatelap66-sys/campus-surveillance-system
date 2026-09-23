@@ -20,26 +20,28 @@ const getFromAddress = () => {
   );
 };
 
+/* =========================================================
+   GENERIC EMAIL SENDER
+========================================================= */
+
 const sendEmail = async ({
   to,
   subject,
   text,
   html,
 }) => {
+  if (!to) {
+    throw new Error("Recipient email address is missing.");
+  }
+
   if (
     !process.env.SMTP_HOST ||
     !process.env.SMTP_USER ||
     !process.env.SMTP_PASS
   ) {
-    console.warn(
-      "EMAIL CONFIGURATION MISSING. Email was not sent."
+    throw new Error(
+      "SMTP configuration is missing."
     );
-
-    return {
-      success: false,
-      skipped: true,
-      message: "SMTP configuration is missing",
-    };
   }
 
   try {
@@ -65,34 +67,55 @@ const sendEmail = async ({
       error.message
     );
 
-    return {
-      success: false,
-      error: error.message,
-    };
+    throw error;
   }
 };
 
-/*
-========================================
-EMAIL VERIFICATION CODE
-========================================
-*/
+/* =========================================================
+   EMAIL VERIFICATION CODE
+========================================================= */
 
 const sendEmailVerificationCode = async (
   user,
   verificationCode
 ) => {
+  if (!user) {
+    throw new Error(
+      "Invalid user data supplied for verification email."
+    );
+  }
+
+  const userEmail = String(
+    user.email || ""
+  )
+    .trim()
+    .toLowerCase();
+
+  const userName = String(
+    user.name || "User"
+  ).trim();
+
+  const code = String(
+    verificationCode || ""
+  ).trim();
+
+  if (!userEmail || !code) {
+    throw new Error(
+      "Invalid user data supplied for verification email."
+    );
+  }
+
   return sendEmail({
-    to: user.email,
+    to: userEmail,
 
     subject:
       "CVRU Campus Surveillance - Verify Your Email",
 
-    text: `Hello ${user.name},
+    text: `Hello ${userName},
 
 Your CVRU Campus Surveillance System verification code is:
 
-${verificationCode}
+${code}
 
 This code is valid for 10 minutes.
 
@@ -118,7 +141,7 @@ CVRU Campus Surveillance System`,
         </h2>
 
         <p>
-          Hello <strong>${user.name}</strong>,
+          Hello <strong>${userName}</strong>,
         </p>
 
         <p>
@@ -138,7 +161,7 @@ CVRU Campus Surveillance System`,
             color: #174a8b;
           "
         >
-          ${verificationCode}
+          ${code}
         </div>
 
         <p>
@@ -167,13 +190,17 @@ CVRU Campus Surveillance System`,
   });
 };
 
-/*
-========================================
-STUDENT WELCOME EMAIL
-========================================
-*/
+/* =========================================================
+   STUDENT WELCOME EMAIL
+========================================================= */
 
 const sendStudentWelcomeEmail = async (user) => {
+  if (!user || !user.email) {
+    throw new Error(
+      "Invalid user data supplied for welcome email."
+    );
+  }
+
   return sendEmail({
     to: user.email,
 
@@ -212,13 +239,17 @@ CVRU Campus Surveillance System`,
   });
 };
 
-/*
-========================================
-PENDING APPROVAL EMAIL
-========================================
-*/
+/* =========================================================
+   PENDING APPROVAL EMAIL
+========================================================= */
 
 const sendPendingApprovalEmail = async (user) => {
+  if (!user || !user.email) {
+    throw new Error(
+      "Invalid user data supplied for pending approval email."
+    );
+  }
+
   return sendEmail({
     to: user.email,
 
@@ -266,13 +297,17 @@ CVRU Campus Surveillance System`,
   });
 };
 
-/*
-========================================
-APPROVAL EMAIL
-========================================
-*/
+/* =========================================================
+   APPROVAL EMAIL
+========================================================= */
 
 const sendApprovalEmail = async (user) => {
+  if (!user || !user.email) {
+    throw new Error(
+      "Invalid user data supplied for approval email."
+    );
+  }
+
   return sendEmail({
     to: user.email,
 
@@ -313,13 +348,17 @@ CVRU Campus Surveillance System`,
   });
 };
 
-/*
-========================================
-REJECTION EMAIL
-========================================
-*/
+/* =========================================================
+   REJECTION EMAIL
+========================================================= */
 
 const sendRejectionEmail = async (user) => {
+  if (!user || !user.email) {
+    throw new Error(
+      "Invalid user data supplied for rejection email."
+    );
+  }
+
   return sendEmail({
     to: user.email,
 
@@ -360,11 +399,9 @@ CVRU Campus Surveillance System`,
   });
 };
 
-/*
-========================================
-VERIFY SMTP CONNECTION
-========================================
-*/
+/* =========================================================
+   VERIFY SMTP CONNECTION
+========================================================= */
 
 const verifyEmailTransport = async () => {
   try {
@@ -385,11 +422,15 @@ const verifyEmailTransport = async () => {
   }
 };
 
+/* =========================================================
+   EXPORTS
+========================================================= */
+
 module.exports = {
+  sendEmailVerificationCode,
   sendStudentWelcomeEmail,
   sendPendingApprovalEmail,
   sendApprovalEmail,
   sendRejectionEmail,
-  sendEmailVerificationCode,
   verifyEmailTransport,
 };
