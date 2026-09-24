@@ -16,6 +16,7 @@ function Login({ onBack, onLogin }) {
   const [loginRole, setLoginRole] = useState("admin");
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
 
   // =================================================
   // REGISTER STATE
@@ -25,6 +26,7 @@ function Login({ onBack, onLogin }) {
   const [registerName, setRegisterName] = useState("");
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
 
   // =================================================
   // EMAIL VERIFICATION STATE
@@ -390,6 +392,42 @@ if (!response.ok || !data.success) {
         </button>
       )}
 
+      <style>{`
+        .cvru-password-wrapper {
+          position: relative;
+          width: 100%;
+        }
+        .cvru-password-wrapper .cvru-password-input {
+          width: 100%;
+          padding-right: 52px;
+          box-sizing: border-box;
+        }
+        .cvru-password-toggle {
+          position: absolute;
+          top: 50%;
+          right: 10px;
+          transform: translateY(-50%);
+          width: 36px;
+          height: 36px;
+          border: none;
+          background: transparent;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 19px;
+          line-height: 1;
+          padding: 0;
+          z-index: 2;
+        }
+        .cvru-password-toggle:hover {
+          transform: translateY(-50%) scale(1.08);
+        }
+        .cvru-password-toggle:focus {
+          outline: none;
+        }
+      `}</style>
+
       <div className="cvru-login-panel">
         {children}
       </div>
@@ -510,15 +548,26 @@ if (!response.ok || !data.success) {
           />
 
           <label>Password</label>
-          <input
-            className="cvru-input"
-            type="password"
-            value={registerPassword}
-            onChange={(e) => setRegisterPassword(e.target.value)}
-            placeholder="Create a password"
-            autoComplete="new-password"
-            required
-          />
+          <div className="cvru-password-wrapper">
+            <input
+              className="cvru-input cvru-password-input"
+              type={showRegisterPassword ? "text" : "password"}
+              value={registerPassword}
+              onChange={(e) => setRegisterPassword(e.target.value)}
+              placeholder="Create a password"
+              autoComplete="new-password"
+              required
+            />
+            <button
+              type="button"
+              className="cvru-password-toggle"
+              onClick={() => setShowRegisterPassword((prev) => !prev)}
+              aria-label={showRegisterPassword ? "Hide password" : "Show password"}
+              title={showRegisterPassword ? "Hide password" : "Show password"}
+            >
+              {showRegisterPassword ? "🙈" : "👁️"}
+            </button>
+          </div>
 
           <label>Register As</label>
           <div className="cvru-role-grid">
@@ -599,15 +648,26 @@ if (!response.ok || !data.success) {
         />
 
         <label>Password</label>
-        <input
-          className="cvru-input"
-          type="password"
-          value={loginPassword}
-          onChange={(e) => setLoginPassword(e.target.value)}
-          placeholder="Enter your password"
-          autoComplete="current-password"
-          required
-        />
+        <div className="cvru-password-wrapper">
+          <input
+            className="cvru-input cvru-password-input"
+            type={showLoginPassword ? "text" : "password"}
+            value={loginPassword}
+            onChange={(e) => setLoginPassword(e.target.value)}
+            placeholder="Enter your password"
+            autoComplete="current-password"
+            required
+          />
+          <button
+            type="button"
+            className="cvru-password-toggle"
+            onClick={() => setShowLoginPassword((prev) => !prev)}
+            aria-label={showLoginPassword ? "Hide password" : "Show password"}
+            title={showLoginPassword ? "Hide password" : "Show password"}
+          >
+            {showLoginPassword ? "🙈" : "👁️"}
+          </button>
+        </div>
 
         <label>Login As</label>
         <div className="cvru-role-grid login-roles">

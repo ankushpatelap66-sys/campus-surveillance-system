@@ -134,7 +134,7 @@ function SecurityAlerts() {
   };
 
   return (
-    <div style={styles.page}>
+    <div className="security-alerts-page" style={styles.page}>
       <div style={styles.container}>
         {/* PAGE TITLE */}
         <section style={styles.hero}>
@@ -164,7 +164,7 @@ function SecurityAlerts() {
         )}
 
         {/* KPI CARDS */}
-        <section style={styles.statsGrid}>
+        <section className="alerts-kpi-grid" style={styles.statsGrid}>
           <StatCard icon="!" label="Total Alerts" value={totalAlerts} note="All recorded alerts" tone="danger" />
           <StatCard icon="●" label="Active Alerts" value={activeAlerts} note="Require attention" tone="active" />
           <StatCard icon="✓" label="Resolved Alerts" value={resolvedAlerts} note="Successfully closed" tone="success" />
@@ -173,7 +173,7 @@ function SecurityAlerts() {
 
         {/* ALERT LIST */}
         <section style={styles.panel}>
-          <div style={styles.panelHeader}>
+          <div className="alerts-panel-header" style={styles.panelHeader}>
             <div>
               <div style={styles.panelKicker}>LIVE SECURITY FEED</div>
               <h2 style={styles.panelTitle}>Recent Security Alerts</h2>
@@ -184,7 +184,7 @@ function SecurityAlerts() {
             </div>
           </div>
 
-          <div style={styles.filterBar}>
+          <div className="alerts-filter-bar" style={styles.filterBar}>
             <div style={styles.searchWrap}>
               <span style={styles.searchIcon}>⌕</span>
               <input
@@ -241,18 +241,18 @@ function SecurityAlerts() {
                 const severity = alert.severity || "Medium";
 
                 return (
-                  <article key={alert._id || `${alert.vehicleNumber}-${index}`} style={styles.alertRow}>
+                  <article className="alerts-alert-row" key={alert._id || `${alert.vehicleNumber}-${index}`} style={styles.alertRow}>
                     <div style={{ ...styles.alertIcon, ...toneStyles[meta.tone] }}>
                       {meta.icon}
                     </div>
 
-                    <div style={styles.alertContent}>
-                      <div style={styles.alertTopLine}>
+                    <div className="alerts-alert-content" style={styles.alertContent}>
+                      <div className="alerts-alert-top-line" style={styles.alertTopLine}>
                         <div>
                           <div style={styles.alertType}>{alert.type || "Security Alert"}</div>
                           <div style={styles.alertCategory}>{meta.label}</div>
                         </div>
-                        <div style={styles.badgeGroup}>
+                        <div className="alerts-badge-group" style={styles.badgeGroup}>
                           <span style={{ ...styles.priorityBadge, ...priorityStyles[severity] }}>
                             {severity} Priority
                           </span>
@@ -262,7 +262,7 @@ function SecurityAlerts() {
                         </div>
                       </div>
 
-                      <div style={styles.alertDetailsGrid}>
+                      <div className="alerts-alert-details" style={styles.alertDetailsGrid}>
                         <Detail label="Vehicle Number" value={alert.vehicleNumber || "Unknown"} strong />
                         <Detail label="Location" value={alert.location || "Main Gate"} />
                         <Detail label="Detected" value={formatDateTime(alert.detectedAt || alert.createdAt)} />
@@ -273,7 +273,7 @@ function SecurityAlerts() {
                       </div>
                     </div>
 
-                    <div style={styles.alertAction}>
+                    <div className="alerts-alert-action" style={styles.alertAction}>
                       {isResolved ? (
                         <div style={styles.resolvedText}>✓ Resolved</div>
                       ) : (
@@ -293,7 +293,7 @@ function SecurityAlerts() {
           )}
         </section>
 
-        <section style={styles.infoStrip}>
+        <section className="alerts-info-strip" style={styles.infoStrip}>
           <div>
             <strong>Dr. C. V. Raman University</strong>
             <span>Vaishali, Bihar • Campus Surveillance System</span>

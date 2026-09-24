@@ -1964,3 +1964,772 @@ img { max-width: 100%; display: block; }
     overflow-x: hidden;
   }
 }
+
+/* =========================================================
+   FINAL MOBILE RESPONSIVE FIX
+   Desktop / laptop layout remains unchanged.
+   These rules apply ONLY to screens 800px and below.
+   ========================================================= */
+
+@media (max-width: 800px) {
+
+  /* ---------- GLOBAL MOBILE SAFETY ---------- */
+  html,
+  body,
+  #root {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  .dashboard-app,
+  .dashboard-body,
+  .dashboard-main,
+  .dashboard-content {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  /* ---------- MOBILE HEADER ---------- */
+  .dashboard-header {
+    width: 100%;
+    height: 70px;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+  }
+
+  .university-header-brand {
+    min-width: 0;
+    width: 100%;
+    padding: 6px 8px 6px 55px !important;
+    gap: 8px;
+  }
+
+  .header-cvru-logo {
+    width: 48px !important;
+    height: 48px !important;
+    flex: 0 0 48px !important;
+  }
+
+  .university-name {
+    min-width: 0;
+    border-right: 0;
+    padding-right: 0;
+  }
+
+  .university-name strong {
+    max-width: 190px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 11px !important;
+    white-space: nowrap;
+  }
+
+  .university-name span {
+    max-width: 190px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 7px !important;
+    white-space: nowrap;
+  }
+
+  .header-project-brand {
+    display: none !important;
+  }
+
+  .header-actions {
+    min-width: 0;
+    padding: 0 8px 0 4px !important;
+    gap: 6px !important;
+  }
+
+  .header-user {
+    gap: 5px;
+  }
+
+  .header-avatar {
+    width: 38px;
+    height: 38px;
+  }
+
+  .header-user div {
+    display: none !important;
+  }
+
+  /* ---------- MOBILE SIDEBAR ---------- */
+  .dashboard-sidebar {
+    width: 254px !important;
+    flex: 0 0 254px !important;
+    top: 70px !important;
+    height: calc(100vh - 70px);
+    left: -270px;
+  }
+
+  .dashboard-sidebar.is-open {
+    left: 0;
+  }
+
+  .mobile-menu-button {
+    display: grid !important;
+    place-items: center;
+    width: 40px !important;
+    height: 40px !important;
+    left: 10px !important;
+    top: 15px !important;
+    z-index: 90;
+  }
+
+  .mobile-sidebar-overlay {
+    inset: 70px 0 0 !important;
+  }
+
+  /* ---------- MAIN CONTENT ---------- */
+  .dashboard-content {
+    padding: 0 10px 20px !important;
+  }
+
+  .dashboard-hero {
+    width: calc(100% + 20px) !important;
+    margin-left: -10px !important;
+    margin-right: -10px !important;
+    height: 300px !important;
+    border-radius: 0;
+    background-position: center center;
+  }
+
+  .dashboard-hero-content {
+    padding: 28px 20px !important;
+    max-width: 100%;
+  }
+
+  .dashboard-hero h1 {
+    max-width: 100%;
+    font-size: 27px !important;
+    line-height: 1.18;
+  }
+
+  .dashboard-hero p {
+    max-width: 100%;
+    font-size: 11px !important;
+    line-height: 1.55;
+  }
+
+  .hero-location {
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 10px;
+  }
+
+  /* ---------- STAT CARDS ---------- */
+  .dashboard-stats,
+  .dashboard-left-column .dashboard-stats {
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 9px !important;
+    margin-bottom: 14px;
+  }
+
+  .stat-card {
+    width: 100%;
+    min-width: 0;
+    min-height: 125px !important;
+    padding: 12px 10px !important;
+  }
+
+  .stat-main {
+    min-width: 0;
+    gap: 8px;
+  }
+
+  .stat-icon {
+    width: 38px !important;
+    height: 38px !important;
+    flex: 0 0 38px !important;
+    font-size: 17px !important;
+  }
+
+  .stat-main > div {
+    min-width: 0;
+  }
+
+  .stat-main h3 {
+    font-size: 9px !important;
+    line-height: 1.3;
+  }
+
+  .stat-main strong {
+    font-size: 18px !important;
+  }
+
+  .stat-main span {
+    font-size: 8px !important;
+  }
+
+  .stat-bottom {
+    margin-top: 10px;
+  }
+
+  .stat-sparkline {
+    display: none !important;
+  }
+
+  /* ---------- DASHBOARD MAIN LAYOUT ---------- */
+  .dashboard-layout {
+    width: 100%;
+    display: block !important;
+  }
+
+  .dashboard-left-column {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .dashboard-lower-grid {
+    width: 100%;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .dashboard-side-column {
+    width: 100%;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    margin-top: 12px;
+  }
+
+  .dashboard-panel,
+  .admin-card,
+  .live-camera-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0;
+  }
+
+  /* ---------- PANEL HEADERS ---------- */
+  .panel-title {
+    min-height: 52px;
+    padding: 8px 12px;
+  }
+
+  .panel-title h2 {
+    min-width: 0;
+    font-size: 13px !important;
+    line-height: 1.25;
+  }
+
+  .panel-title button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  /* =====================================================
+     RECENT CAMPUS ACTIVITY
+     Convert the desktop table-like grid into mobile cards.
+     This removes the horizontal squeeze/overflow seen on phone.
+     ===================================================== */
+
+  .activity-table {
+    width: 100% !important;
+    overflow: visible !important;
+    padding: 0 10px 6px !important;
+  }
+
+  .activity-heading {
+    display: none !important;
+  }
+
+  .activity-row {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    gap: 7px 10px !important;
+    padding: 11px 3px !important;
+    align-items: start !important;
+    font-size: 9px !important;
+  }
+
+  .activity-row > span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    line-height: 1.35;
+  }
+
+  .activity-row > span::before {
+    display: block;
+    margin-bottom: 2px;
+    color: #8092aa;
+    font-size: 7px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .35px;
+  }
+
+  .activity-row > span:nth-child(1)::before {
+    content: "Time";
+  }
+
+  .activity-row > span:nth-child(2)::before {
+    content: "Vehicle";
+  }
+
+  .activity-row > span:nth-child(3)::before {
+    content: "Event";
+  }
+
+  .activity-row > span:nth-child(4)::before {
+    content: "Location";
+  }
+
+  .activity-row > span:nth-child(5)::before {
+    content: "Status";
+  }
+
+  .activity-row > span:last-child {
+    justify-self: start !important;
+  }
+
+  .activity-time {
+    align-items: flex-start;
+    gap: 5px;
+  }
+
+  .activity-time b {
+    font-size: 13px;
+  }
+
+  .activity-row strong {
+    font-size: 9px;
+    line-height: 1.35;
+  }
+
+  .activity-status {
+    justify-self: start !important;
+    white-space: nowrap;
+    padding: 4px 8px;
+    font-size: 8px;
+  }
+
+  /* ---------- RECENT SECURITY ALERTS ---------- */
+  .alert-list {
+    width: 100%;
+    padding: 0 10px !important;
+  }
+
+  .alert-row {
+    width: 100%;
+    min-width: 0 !important;
+    min-height: 88px;
+    grid-template-columns: 70px minmax(0, 1fr) 18px !important;
+    gap: 9px !important;
+  }
+
+  .alert-thumb {
+    width: 70px !important;
+    height: 60px !important;
+  }
+
+  .alert-info {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .alert-priority {
+    max-width: 100%;
+    font-size: 8px;
+    margin-bottom: 3px;
+  }
+
+  .alert-info strong {
+    font-size: 10px !important;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
+
+  .alert-info > span:not(.alert-priority),
+  .alert-info small {
+    font-size: 8px !important;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  .alert-arrow {
+    font-size: 19px;
+  }
+
+  /* ---------- ADMINISTRATOR ACCESS ---------- */
+  .admin-card-head {
+    padding: 13px 12px !important;
+  }
+
+  .admin-card-head h2 {
+    font-size: 14px !important;
+  }
+
+  .admin-card-head p {
+    font-size: 8px !important;
+  }
+
+  .admin-user {
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .admin-user > div {
+    min-width: 0;
+  }
+
+  .admin-user strong,
+  .admin-user div span {
+    overflow-wrap: anywhere;
+  }
+
+  .quick-links {
+    padding: 10px 12px 12px;
+  }
+
+  .quick-links button {
+    min-height: 38px;
+    height: auto;
+  }
+
+  /* ---------- LIVE CAMERA ---------- */
+  .camera-preview {
+    width: calc(100% - 20px);
+    height: 190px !important;
+  }
+
+  .camera-meta {
+    padding: 8px 12px 11px;
+  }
+
+  /* ---------- DASHBOARD FOOTER ---------- */
+  .dashboard-footer {
+    width: 100% !important;
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+    padding: 20px 15px !important;
+    text-align: center;
+  }
+
+  .footer-divider {
+    display: none !important;
+  }
+
+  .footer-motto {
+    text-align: center !important;
+  }
+}
+
+/* ---------- SMALL PHONE: 480px ---------- */
+@media (max-width: 480px) {
+
+  .university-header-brand {
+    padding-left: 54px !important;
+  }
+
+  .header-cvru-logo {
+    width: 44px !important;
+    height: 44px !important;
+    flex-basis: 44px !important;
+  }
+
+  .university-name strong {
+    max-width: 145px;
+    font-size: 10px !important;
+  }
+
+  .university-name span {
+    max-width: 145px;
+    font-size: 6.5px !important;
+  }
+
+  .dashboard-hero {
+    height: 285px !important;
+  }
+
+  .dashboard-hero-content {
+    padding: 25px 18px !important;
+  }
+
+  .dashboard-hero h1 {
+    font-size: 24px !important;
+  }
+
+  .dashboard-hero p {
+    font-size: 10px !important;
+  }
+
+  .dashboard-stats,
+  .dashboard-left-column .dashboard-stats {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+
+  .stat-card {
+    min-height: 116px !important;
+    padding: 10px 9px !important;
+  }
+
+  .stat-icon {
+    width: 34px !important;
+    height: 34px !important;
+    flex-basis: 34px !important;
+    font-size: 15px !important;
+  }
+
+  .stat-main h3 {
+    font-size: 8px !important;
+  }
+
+  .stat-main strong {
+    font-size: 17px !important;
+  }
+
+  .stat-main span {
+    font-size: 7px !important;
+  }
+
+  .activity-row {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 7px 8px !important;
+  }
+
+  .alert-row {
+    grid-template-columns: 64px minmax(0, 1fr) 16px !important;
+    gap: 8px !important;
+  }
+
+  .alert-thumb {
+    width: 64px !important;
+    height: 56px !important;
+  }
+
+  .alert-info strong {
+    font-size: 9px !important;
+  }
+
+  .alert-info > span:not(.alert-priority),
+  .alert-info small {
+    font-size: 7.5px !important;
+  }
+
+  .admin-user {
+    grid-template-columns: 38px minmax(0, 1fr) auto;
+  }
+}
+
+/* ---------- VERY SMALL PHONE: 360px ---------- */
+@media (max-width: 360px) {
+
+  .university-name {
+    display: none !important;
+  }
+
+  .university-header-brand {
+    padding-left: 54px !important;
+  }
+
+  .dashboard-stats,
+  .dashboard-left-column .dashboard-stats {
+    grid-template-columns: 1fr !important;
+  }
+
+  .stat-card {
+    min-height: 105px !important;
+  }
+
+  .activity-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .alert-row {
+    grid-template-columns: 60px minmax(0, 1fr) 14px !important;
+  }
+
+  .alert-thumb {
+    width: 60px !important;
+    height: 52px !important;
+  }
+}
+
+
+
+/* =========================================================
+   SECURITY ALERTS PAGE — MOBILE ONLY
+   Works with the responsive class hooks in SecurityAlerts.jsx.
+   Desktop styles remain unchanged.
+   ========================================================= */
+
+@media (max-width: 800px) {
+  .security-alerts-page {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow-x: hidden !important;
+  }
+
+  .security-alerts-page .alerts-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .security-alerts-page .alerts-panel-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+  }
+
+  .security-alerts-page .alerts-filter-bar {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    width: 100% !important;
+  }
+
+  .security-alerts-page .alerts-filter-bar > * {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .security-alerts-page .alerts-alert-row {
+    display: grid !important;
+    grid-template-columns: 44px minmax(0, 1fr) !important;
+    gap: 10px !important;
+    padding: 15px 13px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .security-alerts-page .alerts-alert-content {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .security-alerts-page .alerts-alert-top-line {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .security-alerts-page .alerts-badge-group {
+    width: 100% !important;
+    justify-content: flex-start !important;
+  }
+
+  .security-alerts-page .alerts-alert-details {
+    grid-template-columns: 1fr !important;
+    width: 100% !important;
+  }
+
+  .security-alerts-page .alerts-alert-action {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    align-items: flex-start !important;
+    padding-left: 54px !important;
+  }
+
+  .security-alerts-page .alerts-info-strip {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .security-alerts-page .alerts-kpi-grid {
+    gap: 8px !important;
+  }
+
+  .security-alerts-page .alerts-alert-row {
+    grid-template-columns: 40px minmax(0, 1fr) !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+
+  .security-alerts-page .alerts-alert-action {
+    padding-left: 50px !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .security-alerts-page .alerts-kpi-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* =========================================================
+   FINAL DASHBOARD PHONE FIX — handles both dashboard markup versions
+   Desktop/Web layout is untouched; these rules apply only below 800px.
+========================================================= */
+@media (max-width: 800px) {
+  /* The live dashboard can use either .dashboard-grid or
+     .dashboard-lower-grid. On phone both must become one column. */
+  .dashboard-grid,
+  .dashboard-lower-grid {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 12px !important;
+  }
+
+  .dashboard-grid > .dashboard-panel,
+  .dashboard-lower-grid > .dashboard-panel,
+  .dashboard-grid > .dashboard-side-column,
+  .dashboard-lower-grid > .dashboard-side-column {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    grid-column: 1 / -1 !important;
+  }
+
+  /* Recent Campus Activity must use the full phone width. */
+  .dashboard-grid .activity-panel,
+  .dashboard-lower-grid .activity-panel,
+  .activity-panel,
+  .activity-table {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .activity-table {
+    overflow: visible !important;
+  }
+
+  .activity-row {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    word-break: normal !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  .activity-row > span,
+  .activity-row > strong,
+  .activity-row > em {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  /* Recent Security Alerts also gets the full phone width. */
+  .dashboard-grid .alerts-panel,
+  .dashboard-lower-grid .alerts-panel,
+  .alerts-panel {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+}

@@ -58,6 +58,11 @@ const securityAlertSchema = new mongoose.Schema(
   }
 );
 
+securityAlertSchema.index(
+  { createdAt: 1 },
+  { expireAfterSeconds: 86400 }
+);
+
 const SecurityAlert =
   mongoose.models.SecurityAlert ||
   mongoose.model("SecurityAlert", securityAlertSchema);
@@ -1070,8 +1075,16 @@ router.get(
   "/alerts",
   async (req, res) => {
     try {
+      const twentyFourHoursAgo = new Date(
+        Date.now() - 24 * 60 * 60 * 1000
+      );
+
       const alerts =
-        await SecurityAlert.find()
+        await SecurityAlert.find({
+          createdAt: {
+            $gte: twentyFourHoursAgo,
+          },
+        })
           .sort({
             createdAt: -1,
           })
@@ -1149,6 +1162,57 @@ router.put(
 
           message:
             "Failed to resolve alert.",
+        });
+    }
+  }
+);
+
+
+/* =====================================================
+   DELETE SECURITY ALERT
+===================================================== */
+
+router.delete(
+  "/alerts/:id",
+  async (req, res) => {
+    try {
+      const alert =
+        await SecurityAlert.findByIdAndDelete(
+          req.params.id
+        );
+
+      if (!alert) {
+        return res
+          .status(404)
+          .json({
+            success: false,
+
+            message:
+              "Alert not found.",
+          });
+      }
+
+      return res.json({
+        success: true,
+
+        message:
+          "Security alert deleted successfully.",
+
+        alertId: alert._id,
+      });
+    } catch (error) {
+      console.error(
+        "DELETE ALERT ERROR:",
+        error
+      );
+
+      return res
+        .status(500)
+        .json({
+          success: false,
+
+          message:
+            "Failed to delete security alert.",
         });
     }
   }
