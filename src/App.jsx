@@ -46,7 +46,6 @@ const NAV_ITEMS = [
     label: "Security Alerts",
     icon: "▲",
     roles: ["admin", "security"],
-    badge: 3,
   },
   {
     id: "reports",
@@ -67,6 +66,61 @@ function App() {
   const [user, setUser] = useState(null);
   const [activePage, setActivePage] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [activeAlertCount, setActiveAlertCount] = useState(0);
+
+  useEffect(() => {
+    if (!user) {
+      setActiveAlertCount(0);
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    const fetchActiveAlertCount = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const API_BASE = import.meta.env.VITE_API_URL;
+
+        if (!token || !API_BASE) {
+          if (!cancelled) setActiveAlertCount(0);
+          return;
+        }
+
+        const response = await fetch(
+          `${API_BASE}/automation/dashboard-summary`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Alert count fetch failed");
+        }
+
+        const data = await response.json();
+        const count = Number(data?.summary?.activeAlerts ?? 0);
+
+        if (!cancelled) {
+          setActiveAlertCount(Number.isFinite(count) && count > 0 ? count : 0);
+        }
+      } catch (error) {
+        console.error("ACTIVE ALERT COUNT ERROR:", error);
+        if (!cancelled) setActiveAlertCount(0);
+      }
+    };
+
+    fetchActiveAlertCount();
+
+    const interval = setInterval(fetchActiveAlertCount, 10000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [user]);
 
   const handleLogin = (userData) => {
     setUser(userData);
@@ -161,6 +215,7 @@ function App() {
       <DashboardHeader
         user={user}
         onLogout={handleLogout}
+        activeAlertCount={activeAlertCount}
       />
 
       <button
@@ -187,6 +242,7 @@ function App() {
           activePage={activePage}
           sidebarOpen={sidebarOpen}
           openPage={openPage}
+          activeAlertCount={activeAlertCount}
         />
 
         <main className="dashboard-main">
@@ -214,7 +270,7 @@ function App() {
   );
 }
 
-function DashboardHeader({ user, onLogout }) {
+function DashboardHeader({ user, onLogout, activeAlertCount }) {
   return (
     <header className="dashboard-header">
       <div className="university-header-brand">
@@ -270,7 +326,9 @@ function DashboardHeader({ user, onLogout }) {
           aria-label="Notifications"
         >
           ♟
-          <b>3</b>
+          {activeAlertCount > 0 ? (
+            <b>{activeAlertCount}</b>
+          ) : null}
         </button>
 
         <div className="header-separator" />
@@ -316,6 +374,7 @@ function DashboardSidebar({
   activePage,
   openPage,
   sidebarOpen,
+  activeAlertCount,
 }) {
   return (
     <aside
@@ -346,8 +405,8 @@ function DashboardSidebar({
 
               <span>{item.label}</span>
 
-              {item.badge ? (
-                <em>{item.badge}</em>
+              {item.id === "security-alerts" && activeAlertCount > 0 ? (
+                <em>{activeAlertCount}</em>
               ) : null}
             </button>
           );
